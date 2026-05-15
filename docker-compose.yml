@@ -1,13 +1,8 @@
 services:
   app:
-    image: ghcr.io/${GITHUB_REPOSITORY:-local/sttmount}:latest
+    image: ghcr.io/syoslyot/sttmount:latest
     build: .
     restart: unless-stopped
-    volumes:
-      - ./db:/app/db
-      - ./app/static/gpx:/app/app/static/gpx
-    environment:
-      - DATABASE_URL=/app/db/sttmount.db
 
   nginx:
     image: nginx:alpine

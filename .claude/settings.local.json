@@ -9,7 +9,10 @@
       "Bash(curl -s -o /dev/null -w \" %{http_code}\" http://localhost:8000/search)",
       "Bash(curl -s -o /dev/null -w \" %{http_code}\" http://localhost:8000/region/臺中市)",
       "Bash(curl *)",
-      "Bash(git *)"
+      "Bash(git *)",
+      "Bash(gh --version)",
+      "Bash(gh auth *)",
+      "Bash(gh repo *)"
     ]
   }
 }

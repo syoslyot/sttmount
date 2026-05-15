@@ -1,11 +1,20 @@
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pathlib import Path
 
+from app.models import init_db
 from app.routes import region, date, search, expedition
 
-app = FastAPI(title="sttmount")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    init_db()
+    yield
+
+
+app = FastAPI(title="sttmount", lifespan=lifespan)
 
 app.mount("/static", StaticFiles(directory=Path(__file__).parent / "static"), name="static")
 
