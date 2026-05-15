@@ -13,8 +13,9 @@ CREATE TABLE IF NOT EXISTS expeditions (
     date_end    TEXT CHECK(date_end IS NULL OR date_end GLOB '????-??-??'),
     county      TEXT,
     region      TEXT,
-    description TEXT,
-    created_at  TEXT NOT NULL DEFAULT (date('now')),
+    description   TEXT,
+    preview_image TEXT,
+    created_at    TEXT NOT NULL DEFAULT (date('now')),
     UNIQUE(name, date_start)
 );
 
@@ -67,3 +68,7 @@ def init_db():
                 conn.execute(f"ALTER TABLE members ADD COLUMN {col} TEXT")
             except sqlite3.OperationalError:
                 pass
+        try:
+            conn.execute("ALTER TABLE expeditions ADD COLUMN preview_image TEXT")
+        except sqlite3.OperationalError:
+            pass

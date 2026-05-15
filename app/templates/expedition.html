@@ -24,15 +24,9 @@
   {# 標題 #}
   <h1 class="text-2xl font-bold text-gray-800">{{ exp.name }}</h1>
 
-  {# P1 截圖：計畫書 #}
-  {% if p1_preview %}
-  <img src="/static/maps/{{ exp.id }}/p1_preview.png" alt="出隊計畫書"
-       class="w-full rounded-xl border border-gray-200">
-  {% endif %}
-
-  {# P2 截圖：留守資料 #}
-  {% if p2_preview %}
-  <img src="/static/maps/{{ exp.id }}/p2_preview.png" alt="留守資料"
+  {# 直企截圖（P1+P2 合併）#}
+  {% if exp.preview_image %}
+  <img src="/static/{{ exp.preview_image }}" alt="出隊計畫書"
        class="w-full rounded-xl border border-gray-200">
   {% endif %}
 
