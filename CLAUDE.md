@@ -106,7 +106,7 @@ records      (id, expedition_id, filename, content)
 | 成員紀錄（txt）顯示 | ✅ 完成 |
 | Google Drive 同步腳本 | ✅ 完成（sync_drive.py） |
 | Excel 正規化腳本 | ⏳ 待 Excel 範例 |
-| GitHub Actions CI/CD | ⏳ 待實作 |
+| GitHub Actions CI/CD | ✅ 完成（`.github/workflows/ci.yml`，Node.js 24） |
 | 台灣 SVG 地圖（首頁） | ⏳ 待實作 |
 | Server 部署文件 | ⏳ 待實作 |
 
