@@ -105,7 +105,7 @@ def seed(append: bool = False):
             fname = f"{region}_track.gpx"
             conn.execute(
                 "INSERT OR IGNORE INTO gpx_files(expedition_id, filename, file_path) VALUES (?, ?, ?)",
-                (exp_id, fname, f"gpx/{exp_id}_{fname}"),
+                (exp_id, fname, f"{exp_id}/{fname}"),
             )
 
         # map_files: 0–2
@@ -115,7 +115,7 @@ def seed(append: bool = False):
             fname = f"{region}_map{j + 1}.{ext}"
             conn.execute(
                 "INSERT OR IGNORE INTO map_files(expedition_id, filename, file_path, file_type) VALUES (?, ?, ?, ?)",
-                (exp_id, fname, f"maps/{exp_id}_{fname}", ftype),
+                (exp_id, fname, f"{exp_id}/{fname}", ftype),
             )
 
         # records: 0 or 1
