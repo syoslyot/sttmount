@@ -25,7 +25,9 @@ CREATE TABLE IF NOT EXISTS members (
     id            INTEGER PRIMARY KEY AUTOINCREMENT,
     expedition_id INTEGER NOT NULL REFERENCES expeditions(id) ON DELETE CASCADE,
     name          TEXT NOT NULL,
-    role          TEXT
+    role          TEXT,
+    department    TEXT,
+    experience    TEXT
 );
 
 CREATE TABLE IF NOT EXISTS gpx_files (
@@ -60,3 +62,8 @@ def get_conn() -> sqlite3.Connection:
 def init_db():
     with get_conn() as conn:
         conn.executescript(SCHEMA)
+        for col in ("department", "experience"):
+            try:
+                conn.execute(f"ALTER TABLE members ADD COLUMN {col} TEXT")
+            except sqlite3.OperationalError:
+                pass
