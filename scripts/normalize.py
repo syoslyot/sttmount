@@ -1,5 +1,5 @@
 """
-讀取出隊 Excel（all in one 直企格式），寫入 SQLite。
+讀取出隊 Excel（all in one 直企格式），寫入 SQLite，並生成 P1/P2 截圖。
 資料來源：直企P1（出隊資訊）、直企P2（隊員名單、留守資料）。
 用法：
   python3 scripts/normalize.py data/raw/xxx.xlsx
@@ -8,11 +8,15 @@
 import re
 import sys
 import sqlite3
+import subprocess
+import tempfile
 from pathlib import Path
 
+import fitz
 import openpyxl
 
 DB_PATH = Path(__file__).parent.parent / "db" / "sttmount.db"
+STATIC_MAPS = Path(__file__).parent.parent / "app" / "static" / "maps"
 
 COUNTY_NORMALIZE = {
     "臺北市": "台北", "台北市": "台北",
@@ -62,6 +66,33 @@ def extract_county_region(location: str):
     return county, region
 
 
+def capture_sheet_range(xlsx_path: Path, sheet_name: str, cell_range: str, output_path: Path):
+    """將指定 sheet 的 cell range 截圖存為 PNG。"""
+    with tempfile.TemporaryDirectory() as tmp:
+        tmp = Path(tmp)
+        wb = openpyxl.load_workbook(xlsx_path, data_only=True)
+        ws = wb[sheet_name]
+        ws.print_area = cell_range
+        tmp_xlsx = tmp / "preview.xlsx"
+        wb.save(tmp_xlsx)
+        result = subprocess.run(
+            ["libreoffice", "--headless", "--convert-to", "pdf",
+             str(tmp_xlsx), "--outdir", str(tmp)],
+            capture_output=True, timeout=60
+        )
+        if result.returncode != 0:
+            print(f"    ⚠ LibreOffice 失敗：{result.stderr.decode()[:200]}")
+            return
+        pdf_path = tmp / "preview.pdf"
+        if not pdf_path.exists():
+            print(f"    ⚠ PDF 未生成")
+            return
+        doc = fitz.open(pdf_path)
+        pix = doc[0].get_pixmap(matrix=fitz.Matrix(2.0, 2.0))
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        pix.save(str(output_path))
+
+
 def parse_p1(ws):
     """從 直企P1(列印) 萃取出隊資訊。"""
     name = str(ws["D2"].value or "").strip() or None
@@ -89,17 +120,28 @@ def parse_p2(ws):
         desc_parts.append(f"注意事項：{notes}")
     description = "\n".join(desc_parts) or None
 
-    # 人員名單：rows 16+，col A = 角色縮寫（攜帶），col D = 姓名
-    members: list[tuple[str, str | None]] = []
+    # 人員名單：rows 16+
+    # col A = 角色縮寫（carry-forward）
+    # col B(2) = 系級（第一行，格式「土木114\nE64102038」）
+    # col D(4) = 姓名
+    # col F(6) = 資歷（格式「A/奇萊東稜下嵐山」）
+    members: list[tuple[str, str | None, str | None, str | None]] = []
     current_role: str | None = None
     for r in range(16, ws.max_row + 1):
-        role_abbr = str(ws.cell(r, 1).value or "").strip()   # col A
-        name_raw = str(ws.cell(r, 4).value or "").strip()    # col D
+        role_abbr = str(ws.cell(r, 1).value or "").strip()
+        dept_raw  = str(ws.cell(r, 2).value or "").strip()
+        name_raw  = str(ws.cell(r, 4).value or "").strip()
+        exp_raw   = str(ws.cell(r, 6).value or "").strip()
+
         if role_abbr in ROLE_MAP:
             current_role = ROLE_MAP[role_abbr]
+
         name = name_raw.split("\n")[0].strip()
+        department = dept_raw.split("\n")[0].strip() or None
+        experience = exp_raw.split("\n")[0].strip() or None
+
         if name and current_role is not None:
-            members.append((name, current_role))
+            members.append((name, current_role, department, experience))
 
     return description, members
 
@@ -148,18 +190,30 @@ def normalize(xlsx_path: Path):
     conn.commit()
     exp_id = cur.lastrowid
 
-    for mname, mrole in members:
+    for mname, mrole, mdept, mexp in members:
         conn.execute(
-            "INSERT INTO members(expedition_id, name, role) VALUES (?, ?, ?)",
-            (exp_id, mname, mrole),
+            "INSERT INTO members(expedition_id, name, role, department, experience) "
+            "VALUES (?, ?, ?, ?, ?)",
+            (exp_id, mname, mrole, mdept, mexp),
         )
     conn.commit()
+    conn.close()
 
     print(f"  ✓ 已插入：{name}（id={exp_id}）")
     print(f"    日期：{date_start} ～ {date_end or '—'}")
     print(f"    地點：{county or '—'} · {region or '—'}")
     print(f"    隊員：{len(members)} 人")
-    conn.close()
+
+    # 生成 P1 / P2 截圖
+    out_dir = STATIC_MAPS / str(exp_id)
+    if "直企P1(列印)" in wb.sheetnames:
+        print(f"    截圖 P1...", end=" ", flush=True)
+        capture_sheet_range(xlsx_path, "直企P1(列印)", "A2:G27", out_dir / "p1_preview.png")
+        print("完成" if (out_dir / "p1_preview.png").exists() else "失敗")
+    if "直企P2(列印)" in wb.sheetnames:
+        print(f"    截圖 P2...", end=" ", flush=True)
+        capture_sheet_range(xlsx_path, "直企P2(列印)", "B2:O11", out_dir / "p2_preview.png")
+        print("完成" if (out_dir / "p2_preview.png").exists() else "失敗")
 
 
 def main():
