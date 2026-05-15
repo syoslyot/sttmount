@@ -1,0 +1,153 @@
+{% extends "base.html" %}
+{% block title %}{{ exp.name }} — 山社出隊紀錄{% endblock %}
+
+{% block head %}
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://api.mapbox.com/mapbox.js/plugins/leaflet-omnivore/v0.3.1/leaflet-omnivore.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<nav class="text-sm text-gray-500 mb-4">
+  <a href="/" class="hover:underline">地區</a> ›
+  <a href="/region/{{ exp.county }}" class="hover:underline">{{ exp.county }}</a> ›
+  <a href="/region/{{ exp.county }}/{{ exp.region }}" class="hover:underline">{{ exp.region }}</a> ›
+  {{ exp.name }}
+</nav>
+
+<h1 class="text-2xl font-bold mb-2">{{ exp.name }}</h1>
+<p class="text-gray-500 mb-8">
+  {{ exp.date_start or '—' }}{% if exp.date_end %} ～ {{ exp.date_end }}{% endif %}
+  ｜ {{ exp.county }} {{ exp.region }}
+</p>
+
+{# ── 地圖 ── #}
+<section class="mb-10">
+  <h2 class="text-lg font-semibold mb-3">地圖</h2>
+  <div id="map" class="w-full rounded-lg border" style="height: 480px;"></div>
+  <script>
+    const baseLayers = {
+      "OpenStreetMap": L.tileLayer(
+        "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+        { attribution: "© OpenStreetMap contributors", maxZoom: 19 }
+      ),
+      "OpenTopoMap（等高線）": L.tileLayer(
+        "https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png",
+        { attribution: "© OpenStreetMap contributors, © OpenTopoMap", maxZoom: 17 }
+      ),
+      "NLSC 正射影像（台灣）": L.tileLayer(
+        "https://wmts.nlsc.gov.tw/wmts/PHOTO2/default/GoogleMapsCompatible/{z}/{y}/{x}",
+        { attribution: "© 國土測繪中心", maxZoom: 20 }
+      ),
+    };
+
+    const overlayLayers = {
+      "NLSC 等高線": L.tileLayer(
+        "https://wmts.nlsc.gov.tw/wmts/CONTOUR/default/GoogleMapsCompatible/{z}/{y}/{x}",
+        { attribution: "© 國土測繪中心", maxZoom: 20, opacity: 0.7 }
+      ),
+    };
+
+    const map = L.map("map", {
+      layers: [baseLayers["OpenTopoMap（等高線）"]],
+    }).setView([23.6, 121.0], 8);
+
+    L.control.layers(baseLayers, overlayLayers).addTo(map);
+
+    const trackLayers = [];
+    {% for f in gpx_files %}
+    (function() {
+      const path = "/static/gpx/{{ f.file_path }}";
+      const ext  = path.split(".").pop().toLowerCase();
+      const layer = ext === "kml"
+        ? omnivore.kml(path)
+        : omnivore.gpx(path);
+      layer.on("ready", function() {
+        map.fitBounds(layer.getBounds());
+        layer.eachLayer(function(l) {
+          if (l.bindPopup && l.feature && l.feature.properties) {
+            const p = l.feature.properties;
+            const info = [p.name, p.desc, p.time].filter(Boolean).join("<br>");
+            if (info) l.bindPopup(info);
+          }
+        });
+      });
+      layer.addTo(map);
+    })();
+    {% endfor %}
+  </script>
+</section>
+
+{# ── 地圖圖片 / PDF ── #}
+{% if map_files %}
+<section class="mb-10">
+  <h2 class="text-lg font-semibold mb-3">地圖檔案</h2>
+  <div class="space-y-4">
+    {% for f in map_files %}
+    <div class="bg-white border rounded-lg p-4">
+      <div class="flex items-center justify-between mb-2">
+        <span class="font-medium">{{ f.filename }}</span>
+        <a href="/static/maps/{{ f.file_path }}" download
+           class="text-sm text-green-700 hover:underline">下載</a>
+      </div>
+      {% if f.file_type == "pdf" %}
+      <iframe src="/static/maps/{{ f.file_path }}"
+              class="w-full rounded border" style="height: 520px;"></iframe>
+      {% else %}
+      <img src="/static/maps/{{ f.file_path }}"
+           alt="{{ f.filename }}" class="max-w-full rounded border">
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+
+{# ── 成員紀錄 ── #}
+{% if records %}
+<section class="mb-10">
+  <h2 class="text-lg font-semibold mb-3">成員紀錄</h2>
+  <div class="space-y-4">
+    {% for r in records %}
+    <div class="bg-white border rounded-lg p-5">
+      <h3 class="font-medium text-gray-700 mb-3">{{ r.filename }}</h3>
+      <pre class="whitespace-pre-wrap text-sm text-gray-700 font-sans">{{ r.content }}</pre>
+    </div>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+
+{# ── 隊員名單 ── #}
+{% if members %}
+<section class="mb-10">
+  <h2 class="text-lg font-semibold mb-3">隊員名單</h2>
+  <div class="bg-white border rounded-lg p-5">
+    <table class="w-full text-sm">
+      <thead class="text-gray-500 border-b">
+        <tr><th class="text-left py-1">姓名</th><th class="text-left py-1">角色</th></tr>
+      </thead>
+      <tbody>
+        {% for m in members %}
+        <tr class="border-b last:border-0">
+          <td class="py-2">{{ m.name }}</td>
+          <td class="py-2 text-gray-500">{{ m.role or '—' }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endif %}
+
+{# ── 說明 ── #}
+{% if exp.description %}
+<section class="mb-10">
+  <h2 class="text-lg font-semibold mb-3">說明</h2>
+  <div class="bg-white border rounded-lg p-5">
+    <p class="text-gray-700 whitespace-pre-line">{{ exp.description }}</p>
+  </div>
+</section>
+{% endif %}
+
+{% endblock %}

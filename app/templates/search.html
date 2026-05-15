@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}搜尋 — 山社出隊紀錄{% endblock %}
+{% block content %}
+<h1 class="text-2xl font-bold mb-6">搜尋</h1>
+<form method="get" class="flex gap-3 mb-8">
+  <input type="text" name="q" value="{{ q }}" placeholder="隊伍名稱、地點…"
+         class="border rounded px-3 py-2 flex-1">
+  <button type="submit" class="bg-green-700 text-white px-4 py-2 rounded hover:bg-green-800">搜尋</button>
+</form>
+{% if expeditions %}
+  <ul class="space-y-3">
+    {% for exp in expeditions %}
+    <li class="bg-white border rounded-lg p-4 hover:shadow transition">
+      <a href="/expedition/{{ exp.id }}" class="block">
+        <div class="font-semibold text-green-800">{{ exp.name }}</div>
+        <div class="text-sm text-gray-500">{{ exp.date_start }} ｜ {{ exp.county }} {{ exp.region }}</div>
+      </a>
+    </li>
+    {% endfor %}
+  </ul>
+{% elif q %}
+  <p class="text-gray-500">查無「{{ q }}」相關紀錄。</p>
+{% endif %}
+{% endblock %}

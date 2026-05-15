@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}山社出隊紀錄{% endblock %}</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  {% block head %}{% endblock %}
+</head>
+<body class="bg-gray-50 text-gray-800 min-h-screen">
+  <nav class="bg-green-800 text-white px-6 py-3 flex gap-6 items-center">
+    <a href="/" class="font-bold text-lg">山社出隊紀錄</a>
+    <a href="/date" class="hover:underline">依日期</a>
+    <a href="/search" class="hover:underline">搜尋</a>
+  </nav>
+  <main class="max-w-5xl mx-auto px-4 py-8">
+    {% block content %}{% endblock %}
+  </main>
+</body>
+</html>

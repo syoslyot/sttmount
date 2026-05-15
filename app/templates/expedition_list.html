@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}出隊列表 — 山社出隊紀錄{% endblock %}
+{% block content %}
+<nav class="text-sm text-gray-500 mb-4">
+  <a href="/" class="hover:underline">地區</a> ›
+  <a href="/region/{{ expeditions[0].county if expeditions else '' }}" class="hover:underline">
+    {{ expeditions[0].county if expeditions else '' }}
+  </a> › {{ expeditions[0].region if expeditions else '' }}
+</nav>
+<h1 class="text-2xl font-bold mb-6">出隊列表</h1>
+{% if expeditions %}
+  <ul class="space-y-3">
+    {% for exp in expeditions %}
+    <li class="bg-white border rounded-lg p-4 hover:shadow transition">
+      <a href="/expedition/{{ exp.id }}" class="block">
+        <div class="font-semibold text-green-800">{{ exp.name }}</div>
+        <div class="text-sm text-gray-500">{{ exp.date_start }}{% if exp.date_end %} ～ {{ exp.date_end }}{% endif %}</div>
+      </a>
+    </li>
+    {% endfor %}
+  </ul>
+{% else %}
+  <p class="text-gray-500">此地區目前沒有出隊紀錄。</p>
+{% endif %}
+{% endblock %}
