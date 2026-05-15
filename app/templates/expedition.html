@@ -21,20 +21,6 @@
 {# ── 右半：出隊資訊 ── #}
 <div class="w-1/2 overflow-y-auto px-8 py-8 space-y-8">
 
-  {# 麵包屑 #}
-  <nav class="text-sm text-gray-400">
-    <a href="/" class="hover:text-green-700">首頁</a>
-    {% if exp.county %}
-    ›
-    <a href="/region/{{ exp.county }}" class="hover:text-green-700">{{ exp.county }}</a>
-    {% if exp.region %}
-    ›
-    <a href="/region/{{ exp.county }}/{{ exp.region }}" class="hover:text-green-700">{{ exp.region }}</a>
-    {% endif %}
-    {% endif %}
-    › {{ exp.name }}
-  </nav>
-
   {# 標題 + 基本資訊 #}
   <div>
     <h1 class="text-2xl font-bold text-gray-800 mb-3">{{ exp.name }}</h1>
@@ -56,42 +42,6 @@
       {% endif %}
     </div>
   </div>
-
-  {# 說明 #}
-  {% if exp.description %}
-  <section>
-    <h2 class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">說明</h2>
-    <p class="text-gray-700 text-sm leading-relaxed whitespace-pre-line bg-white border border-gray-200 rounded-xl p-4">{{ exp.description }}</p>
-  </section>
-  {% endif %}
-
-  {# 隊員名單 #}
-  {% if members %}
-  <section>
-    <h2 class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">
-      隊員名單
-      <span class="text-gray-300 font-normal normal-case">（{{ members | length }} 人）</span>
-    </h2>
-    <div class="bg-white border border-gray-200 rounded-xl overflow-hidden">
-      <table class="w-full text-sm">
-        <thead class="bg-gray-50 text-gray-500 border-b border-gray-200">
-          <tr>
-            <th class="text-left px-4 py-2.5">姓名</th>
-            <th class="text-left px-4 py-2.5">角色</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for m in members %}
-          <tr class="border-b border-gray-100 last:border-0">
-            <td class="px-4 py-2.5 text-gray-800">{{ m.name }}</td>
-            <td class="px-4 py-2.5 text-gray-400">{{ m.role or '—' }}</td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-  </section>
-  {% endif %}
 
   {# 成員紀錄（txt） #}
   {% if records %}
