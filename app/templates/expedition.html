@@ -1,170 +1,221 @@
 {% extends "base.html" %}
-{% block title %}{{ exp.name }} — 山社出隊紀錄{% endblock %}
+{% block title %}{{ exp.name }} — 成大山協{% endblock %}
+{% block main_class %}flex overflow-hidden{% endblock %}
 
 {% block head %}
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <link rel="stylesheet" href="https://unpkg.com/@raruto/leaflet-elevation/dist/leaflet-elevation.min.css">
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/d3@5/dist/d3.min.js"></script>
+  <script src="https://unpkg.com/@raruto/leaflet-elevation/dist/leaflet-elevation.min.js"></script>
   <script src="https://api.mapbox.com/mapbox.js/plugins/leaflet-omnivore/v0.3.1/leaflet-omnivore.min.js"></script>
 {% endblock %}
 
 {% block content %}
 
-<nav class="text-sm text-gray-400 mb-6">
-  <a href="/" class="hover:text-green-700">首頁</a> ›
-  {% if exp.county %}
-  <a href="/" class="hover:text-green-700">地區查詢</a> ›
-  <a href="/region/{{ exp.county }}" class="hover:text-green-700">{{ exp.county }}</a> ›
-  {% if exp.region %}
-  <a href="/region/{{ exp.county }}/{{ exp.region }}" class="hover:text-green-700">{{ exp.region }}</a> ›
-  {% endif %}
-  {% endif %}
-  {{ exp.name }}
-</nav>
+{# ── 左半：地圖 ── #}
+<div class="w-1/2 shrink-0 relative" style="height: calc(100vh - 57px);">
+  <div id="map" class="w-full h-full"></div>
+</div>
 
-<h1 class="text-2xl font-bold text-gray-800 mb-1">{{ exp.name }}</h1>
-<p class="text-sm text-gray-400 mb-8">
-  {{ exp.date_start }}{% if exp.date_end %} ～ {{ exp.date_end }}{% endif %}
-  {% if exp.county %}　·　{{ exp.county }}{% if exp.region %} · {{ exp.region }}{% endif %}{% endif %}
-</p>
+{# ── 右半：出隊資訊 ── #}
+<div class="w-1/2 overflow-y-auto px-8 py-8 space-y-8">
 
-{# ── 地圖 ── #}
-<section class="mb-10">
-  <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">地圖</h2>
-  <div id="map" class="w-full rounded-xl border border-gray-200" style="height: 480px;"></div>
-  <script>
-    const COUNTY_CENTER = {
-      "台北":[25.04,121.56],"新北":[25.01,121.46],"基隆":[25.13,121.74],
-      "宜蘭":[24.70,121.74],"桃園":[24.99,121.30],"新竹":[24.84,121.01],
-      "苗栗":[24.57,120.82],"台中":[24.15,120.68],"花蓮":[23.97,121.60],
-      "彰化":[24.07,120.54],"南投":[23.83,120.97],"雲林":[23.71,120.43],
-      "嘉義":[23.48,120.45],"台南":[23.00,120.21],"高雄":[22.63,120.30],
-      "屏東":[22.55,120.55],"台東":[22.75,121.15],
-    };
-    const county = "{{ exp.county or '' }}";
-    const center = COUNTY_CENTER[county] || [23.6, 121.0];
-    const zoom   = COUNTY_CENTER[county] ? 12 : 8;
+  {# 麵包屑 #}
+  <nav class="text-sm text-gray-400">
+    <a href="/" class="hover:text-green-700">首頁</a>
+    {% if exp.county %}
+    ›
+    <a href="/region/{{ exp.county }}" class="hover:text-green-700">{{ exp.county }}</a>
+    {% if exp.region %}
+    ›
+    <a href="/region/{{ exp.county }}/{{ exp.region }}" class="hover:text-green-700">{{ exp.region }}</a>
+    {% endif %}
+    {% endif %}
+    › {{ exp.name }}
+  </nav>
 
-    const nlscEmap = L.tileLayer(
-      "https://wmts.nlsc.gov.tw/wmts/EMAP/default/GoogleMapsCompatible/{z}/{y}/{x}",
-      { attribution: "© 國土測繪中心", maxZoom: 20 }
-    );
-    const baseLayers = {
-      "NLSC 通用電子地圖": nlscEmap,
-      "OpenTopoMap（等高線）": L.tileLayer(
-        "https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png",
-        { attribution: "© OpenStreetMap, © OpenTopoMap", maxZoom: 17 }
-      ),
-      "OpenStreetMap": L.tileLayer(
-        "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-        { attribution: "© OpenStreetMap contributors", maxZoom: 19 }
-      ),
-      "NLSC 正射影像": L.tileLayer(
-        "https://wmts.nlsc.gov.tw/wmts/PHOTO2/default/GoogleMapsCompatible/{z}/{y}/{x}",
-        { attribution: "© 國土測繪中心", maxZoom: 20 }
-      ),
-    };
-    const overlayLayers = {
-      "NLSC 等高線": L.tileLayer(
-        "https://wmts.nlsc.gov.tw/wmts/CONTOUR/default/GoogleMapsCompatible/{z}/{y}/{x}",
-        { attribution: "© 國土測繪中心", maxZoom: 20, opacity: 0.7 }
-      ),
-    };
-    const map = L.map("map", { layers: [nlscEmap] }).setView(center, zoom);
-    L.control.layers(baseLayers, overlayLayers).addTo(map);
-
-    {% for f in gpx_files %}
-    (function() {
-      const path = "/static/gpx/{{ f.file_path }}";
-      const layer = path.endsWith(".kml") ? omnivore.kml(path) : omnivore.gpx(path);
-      layer.on("ready", function() {
-        map.fitBounds(layer.getBounds());
-        layer.eachLayer(function(l) {
-          if (l.feature && l.feature.properties) {
-            const p = l.feature.properties;
-            const info = [p.name, p.desc, p.time].filter(Boolean).join("<br>");
-            if (info) l.bindPopup(info);
-          }
-        });
-      });
-      layer.addTo(map);
-    })();
-    {% endfor %}
-  </script>
-</section>
-
-{# ── 地圖圖片 / PDF ── #}
-{% if map_files %}
-<section class="mb-10">
-  <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">地圖檔案</h2>
-  <div class="space-y-4">
-    {% for f in map_files %}
-    <div class="bg-white border border-gray-200 rounded-xl p-5">
-      <div class="flex items-center justify-between mb-3">
-        <span class="font-medium text-gray-700">{{ f.filename }}</span>
-        <a href="/static/maps/{{ f.file_path }}" download
-           class="text-sm text-green-700 hover:underline">下載</a>
-      </div>
-      {% if f.file_type == "pdf" %}
-      <iframe src="/static/maps/{{ f.file_path }}"
-              class="w-full rounded-lg border border-gray-100" style="height: 520px;"></iframe>
-      {% else %}
-      <img src="/static/maps/{{ f.file_path }}" alt="{{ f.filename }}"
-           class="max-w-full rounded-lg border border-gray-100">
+  {# 標題 + 基本資訊 #}
+  <div>
+    <h1 class="text-2xl font-bold text-gray-800 mb-3">{{ exp.name }}</h1>
+    <div class="flex flex-wrap gap-3">
+      <span class="inline-flex items-center gap-1.5 bg-gray-100 text-gray-600 text-sm rounded-full px-3 py-1">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5"/>
+        </svg>
+        {{ exp.date_start }}{% if exp.date_end %} ～ {{ exp.date_end }}{% endif %}
+      </span>
+      {% if exp.county %}
+      <span class="inline-flex items-center gap-1.5 bg-green-50 text-green-700 text-sm rounded-full px-3 py-1">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0z"/>
+          <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0z"/>
+        </svg>
+        {{ exp.county }}{% if exp.region %} · {{ exp.region }}{% endif %}
+      </span>
       {% endif %}
     </div>
-    {% endfor %}
   </div>
-</section>
-{% endif %}
 
-{# ── 成員紀錄 ── #}
-{% if records %}
-<section class="mb-10">
-  <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">成員紀錄</h2>
-  <div class="space-y-4">
-    {% for r in records %}
-    <div class="bg-white border border-gray-200 rounded-xl p-5">
-      <h3 class="font-medium text-gray-600 mb-3">{{ r.filename }}</h3>
-      <pre class="whitespace-pre-wrap text-sm text-gray-700 font-sans leading-relaxed">{{ r.content }}</pre>
+  {# 說明 #}
+  {% if exp.description %}
+  <section>
+    <h2 class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">說明</h2>
+    <p class="text-gray-700 text-sm leading-relaxed whitespace-pre-line bg-white border border-gray-200 rounded-xl p-4">{{ exp.description }}</p>
+  </section>
+  {% endif %}
+
+  {# 隊員名單 #}
+  {% if members %}
+  <section>
+    <h2 class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">
+      隊員名單
+      <span class="text-gray-300 font-normal normal-case">（{{ members | length }} 人）</span>
+    </h2>
+    <div class="bg-white border border-gray-200 rounded-xl overflow-hidden">
+      <table class="w-full text-sm">
+        <thead class="bg-gray-50 text-gray-500 border-b border-gray-200">
+          <tr>
+            <th class="text-left px-4 py-2.5">姓名</th>
+            <th class="text-left px-4 py-2.5">角色</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for m in members %}
+          <tr class="border-b border-gray-100 last:border-0">
+            <td class="px-4 py-2.5 text-gray-800">{{ m.name }}</td>
+            <td class="px-4 py-2.5 text-gray-400">{{ m.role or '—' }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
     </div>
-    {% endfor %}
-  </div>
-</section>
-{% endif %}
+  </section>
+  {% endif %}
 
-{# ── 隊員名單 ── #}
-{% if members %}
-<section class="mb-10">
-  <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">隊員名單</h2>
-  <div class="bg-white border border-gray-200 rounded-xl overflow-hidden">
-    <table class="w-full text-sm">
-      <thead class="bg-gray-50 text-gray-500 border-b border-gray-200">
-        <tr>
-          <th class="text-left px-5 py-3">姓名</th>
-          <th class="text-left px-5 py-3">角色</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for m in members %}
-        <tr class="border-b border-gray-100 last:border-0">
-          <td class="px-5 py-3 text-gray-800">{{ m.name }}</td>
-          <td class="px-5 py-3 text-gray-400">{{ m.role or '—' }}</td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
-</section>
-{% endif %}
+  {# 成員紀錄（txt） #}
+  {% if records %}
+  <section>
+    <h2 class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">成員紀錄</h2>
+    <div class="space-y-3">
+      {% for r in records %}
+      <div class="bg-white border border-gray-200 rounded-xl p-4">
+        <p class="text-xs text-gray-400 mb-2">{{ r.filename }}</p>
+        <pre class="whitespace-pre-wrap text-sm text-gray-700 font-sans leading-relaxed">{{ r.content }}</pre>
+      </div>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
 
-{# ── 說明 ── #}
-{% if exp.description %}
-<section class="mb-10">
-  <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">說明</h2>
-  <div class="bg-white border border-gray-200 rounded-xl p-5">
-    <p class="text-gray-700 text-sm leading-relaxed whitespace-pre-line">{{ exp.description }}</p>
-  </div>
-</section>
-{% endif %}
+  {# 地圖檔案（PDF / 圖片） #}
+  {% if map_files %}
+  <section>
+    <h2 class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">地圖檔案</h2>
+    <div class="space-y-3">
+      {% for f in map_files %}
+      <div class="bg-white border border-gray-200 rounded-xl p-4">
+        <div class="flex items-center justify-between mb-3">
+          <span class="text-sm font-medium text-gray-700">{{ f.filename }}</span>
+          <a href="/static/maps/{{ f.file_path }}" download
+             class="text-xs text-green-700 hover:underline">下載</a>
+        </div>
+        {% if f.file_type == "pdf" %}
+        <iframe src="/static/maps/{{ f.file_path }}"
+                class="w-full rounded-lg border border-gray-100" style="height: 480px;"></iframe>
+        {% else %}
+        <img src="/static/maps/{{ f.file_path }}" alt="{{ f.filename }}"
+             class="max-w-full rounded-lg border border-gray-100">
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
+
+  {# GPX / KML 軌跡檔案 #}
+  {% if gpx_files %}
+  <section>
+    <h2 class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">軌跡檔案</h2>
+    <div class="space-y-1.5">
+      {% for f in gpx_files %}
+      <div class="flex items-center justify-between bg-white border border-gray-200 rounded-lg px-4 py-3">
+        <span class="text-sm text-gray-700">{{ f.filename }}</span>
+        <a href="/static/gpx/{{ f.file_path }}" download
+           class="text-xs text-green-700 hover:underline">下載</a>
+      </div>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
+
+</div>
+
+<script>
+  const COUNTY_CENTER = {
+    "台北":[25.04,121.56],"新北":[25.01,121.46],"基隆":[25.13,121.74],
+    "宜蘭":[24.70,121.74],"桃園":[24.99,121.30],"新竹":[24.84,121.01],
+    "苗栗":[24.57,120.82],"台中":[24.15,120.68],"花蓮":[23.97,121.60],
+    "彰化":[24.07,120.54],"南投":[23.83,120.97],"雲林":[23.71,120.43],
+    "嘉義":[23.48,120.45],"台南":[23.00,120.21],"高雄":[22.63,120.30],
+    "屏東":[22.55,120.55],"台東":[22.75,121.15],
+  };
+  const county = "{{ exp.county or '' }}";
+  const center = COUNTY_CENTER[county] || [23.6, 121.0];
+  const zoom   = COUNTY_CENTER[county] ? 12 : 8;
+
+  const nlscEmap = L.tileLayer(
+    "https://wmts.nlsc.gov.tw/wmts/EMAP/default/GoogleMapsCompatible/{z}/{y}/{x}",
+    { attribution: "© 國土測繪中心", maxZoom: 20 }
+  );
+  const baseLayers = {
+    "NLSC 通用電子地圖": nlscEmap,
+    "OpenTopoMap（等高線）": L.tileLayer(
+      "https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png",
+      { attribution: "© OpenStreetMap, © OpenTopoMap", maxZoom: 17 }
+    ),
+    "OpenStreetMap": L.tileLayer(
+      "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+      { attribution: "© OpenStreetMap contributors", maxZoom: 19 }
+    ),
+    "NLSC 正射影像": L.tileLayer(
+      "https://wmts.nlsc.gov.tw/wmts/PHOTO2/default/GoogleMapsCompatible/{z}/{y}/{x}",
+      { attribution: "© 國土測繪中心", maxZoom: 20 }
+    ),
+  };
+  const overlayLayers = {
+    "NLSC 等高線": L.tileLayer(
+      "https://wmts.nlsc.gov.tw/wmts/CONTOUR/default/GoogleMapsCompatible/{z}/{y}/{x}",
+      { attribution: "© 國土測繪中心", maxZoom: 20, opacity: 0.7 }
+    ),
+  };
+  const map = L.map("map", { layers: [nlscEmap] }).setView(center, zoom);
+  L.control.layers(baseLayers, overlayLayers).addTo(map);
+
+  {% if gpx_files %}
+  const elevation = L.control.elevation({
+    position: "bottomright",
+    theme: "steelblue-theme",
+    height: 160,
+    width: 500,
+    margins: { top: 10, right: 20, bottom: 30, left: 50 },
+    followMarker: true,
+    slope: false,
+    speed: false,
+  }).addTo(map);
+
+  {% for f in gpx_files %}
+  {% if '.kml' in f.filename %}
+  (function() {
+    const layer = omnivore.kml("/static/gpx/{{ f.file_path }}");
+    layer.on("ready", function() { map.fitBounds(layer.getBounds()); });
+    layer.addTo(map);
+  })();
+  {% else %}
+  elevation.load("/static/gpx/{{ f.file_path }}");
+  {% endif %}
+  {% endfor %}
+  {% endif %}
+</script>
 
 {% endblock %}
