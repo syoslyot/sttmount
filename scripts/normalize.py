@@ -14,6 +14,8 @@ from pathlib import Path
 
 import fitz
 import openpyxl
+from openpyxl.worksheet.properties import PageSetupProperties
+from PIL import Image
 
 DB_PATH = Path(__file__).parent.parent / "db" / "sttmount.db"
 STATIC_MAPS = Path(__file__).parent.parent / "app" / "static" / "maps"
@@ -73,6 +75,10 @@ def capture_sheet_range(xlsx_path: Path, sheet_name: str, cell_range: str, outpu
         wb = openpyxl.load_workbook(xlsx_path, data_only=True)
         ws = wb[sheet_name]
         ws.print_area = cell_range
+        if ws.sheet_properties.pageSetUpPr is None:
+            ws.sheet_properties.pageSetUpPr = PageSetupProperties(fitToPage=True)
+        else:
+            ws.sheet_properties.pageSetUpPr.fitToPage = True
         for name in list(wb.sheetnames):
             if name != sheet_name:
                 del wb[name]
@@ -94,6 +100,21 @@ def capture_sheet_range(xlsx_path: Path, sheet_name: str, cell_range: str, outpu
         pix = doc[0].get_pixmap(matrix=fitz.Matrix(2.0, 2.0))
         output_path.parent.mkdir(parents=True, exist_ok=True)
         pix.save(str(output_path))
+
+
+def merge_images_vertical(paths: list[Path], output_path: Path):
+    imgs = [Image.open(p) for p in paths if p.exists()]
+    if not imgs:
+        return
+    w = max(img.width for img in imgs)
+    resized = [img.resize((w, round(img.height * w / img.width)), Image.LANCZOS)
+               for img in imgs]
+    combined = Image.new("RGB", (w, sum(img.height for img in resized)), "white")
+    y = 0
+    for img in resized:
+        combined.paste(img, (0, y))
+        y += img.height
+    combined.save(str(output_path))
 
 
 def parse_p1(ws):
@@ -207,16 +228,37 @@ def normalize(xlsx_path: Path):
     print(f"    地點：{county or '—'} · {region or '—'}")
     print(f"    隊員：{len(members)} 人")
 
-    # 生成 P1 / P2 截圖
+    # 生成截圖並合併
     out_dir = STATIC_MAPS / str(exp_id)
+    p1_path = out_dir / "p1.png"
+    p2_path = out_dir / "p2.png"
+    preview_path = out_dir / "preview.png"
+
+    print(f"    截圖 P1...", end=" ", flush=True)
     if "直企P1(列印)" in wb.sheetnames:
-        print(f"    截圖 P1...", end=" ", flush=True)
-        capture_sheet_range(xlsx_path, "直企P1(列印)", "A2:G27", out_dir / "p1_preview.png")
-        print("完成" if (out_dir / "p1_preview.png").exists() else "失敗")
+        capture_sheet_range(xlsx_path, "直企P1(列印)", "A2:G27", p1_path)
+        print("完成" if p1_path.exists() else "失敗")
+    else:
+        print("跳過")
+
+    print(f"    截圖 P2...", end=" ", flush=True)
     if "直企P2(列印)" in wb.sheetnames:
-        print(f"    截圖 P2...", end=" ", flush=True)
-        capture_sheet_range(xlsx_path, "直企P2(列印)", "B2:O11", out_dir / "p2_preview.png")
-        print("完成" if (out_dir / "p2_preview.png").exists() else "失敗")
+        capture_sheet_range(xlsx_path, "直企P2(列印)", "B2:O11", p2_path)
+        print("完成" if p2_path.exists() else "失敗")
+    else:
+        print("跳過")
+
+    merge_images_vertical([p1_path, p2_path], preview_path)
+    p1_path.unlink(missing_ok=True)
+    p2_path.unlink(missing_ok=True)
+
+    if preview_path.exists():
+        rel = f"maps/{exp_id}/preview.png"
+        conn = sqlite3.connect(DB_PATH)
+        conn.execute("UPDATE expeditions SET preview_image=? WHERE id=?", (rel, exp_id))
+        conn.commit()
+        conn.close()
+        print(f"    預覽圖：{rel}")
 
 
 def main():
