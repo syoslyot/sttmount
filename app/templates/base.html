@@ -13,36 +13,6 @@
   {% set path = request.url.path %}
   <nav class="bg-green-800 text-white px-6 py-3 flex items-center justify-between shadow shrink-0">
     <a href="/" class="font-bold text-lg tracking-wide">成大山協</a>
-    <div class="flex gap-5 items-center">
-
-      {# 地區 icon #}
-      <a href="/?mode=map" title="地區查詢"
-         class="hover:text-green-200 transition {% if path == '/' and 'date' not in request.url.query and 'search' not in request.url.query %}opacity-100{% else %}opacity-70 hover:opacity-100{% endif %}">
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round"
-            d="M9 6.75V15m6-6v8.25m.503 3.498 4.875-2.437c.381-.19.622-.58.622-1.006V4.82c0-.836-.88-1.38-1.628-1.006l-3.869 1.934c-.317.159-.69.159-1.006 0L9.503 3.252a1.125 1.125 0 0 0-1.006 0L3.622 5.689C3.24 5.88 3 6.27 3 6.695V19.18c0 .836.88 1.38 1.628 1.006l3.869-1.934c.317-.159.69-.159 1.006 0l4.994 2.497c.317.158.69.158 1.006 0z"/>
-        </svg>
-      </a>
-
-      {# 日期 icon #}
-      <a href="/?mode=date" title="依日期查詢"
-         class="hover:text-green-200 transition {% if path.startswith('/date') %}opacity-100{% else %}opacity-70 hover:opacity-100{% endif %}">
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round"
-            d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5"/>
-        </svg>
-      </a>
-
-      {# 搜尋 icon #}
-      <a href="/?mode=search" title="文字搜尋"
-         class="hover:text-green-200 transition {% if path.startswith('/search') %}opacity-100{% else %}opacity-70 hover:opacity-100{% endif %}">
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round"
-            d="M21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 15.803 7.5 7.5 0 0 0 16.803 15.803z"/>
-        </svg>
-      </a>
-
-    </div>
   </nav>
 
   <main class="flex-1 {% block main_class %}max-w-5xl w-full mx-auto px-4 py-8{% endblock %}">
