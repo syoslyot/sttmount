@@ -5,7 +5,7 @@ from fastapi.templating import Jinja2Templates
 from pathlib import Path
 
 from app.models import init_db
-from app.routes import region, date, search, expedition
+from app.routes import home, region, date, search, expedition
 
 
 @asynccontextmanager
@@ -20,6 +20,7 @@ app.mount("/static", StaticFiles(directory=Path(__file__).parent / "static"), na
 
 templates = Jinja2Templates(directory=Path(__file__).parent / "templates")
 
+app.include_router(home.router)
 app.include_router(region.router)
 app.include_router(date.router)
 app.include_router(search.router)

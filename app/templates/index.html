@@ -1,24 +1,51 @@
 {% extends "base.html" %}
-{% block title %}地區查詢 — 山社出隊紀錄{% endblock %}
+{% block title %}山社出隊紀錄{% endblock %}
 {% block content %}
-<h1 class="text-2xl font-bold mb-6">依地區查詢</h1>
-<p class="text-gray-500 mb-8">點選縣市查看該地區的出隊紀錄。</p>
 
-<!-- Taiwan SVG map placeholder — 之後替換為完整 SVG -->
-<div class="grid grid-cols-4 gap-3">
-  {% set counties = [
-    "臺北市","新北市","基隆市","宜蘭縣",
-    "桃園市","新竹市","新竹縣","苗栗縣",
-    "臺中市","彰化縣","南投縣","雲林縣",
-    "嘉義市","嘉義縣","臺南市","高雄市",
-    "屏東縣","臺東縣","花蓮縣","澎湖縣",
-    "金門縣","連江縣"
-  ] %}
-  {% for county in counties %}
-  <a href="/region/{{ county }}"
-     class="bg-white border border-green-300 rounded-lg p-4 text-center hover:bg-green-50 hover:border-green-600 transition">
-    {{ county }}
+{# ── 三個功能入口 ── #}
+<div class="grid grid-cols-3 gap-4 mb-10">
+  <a href="/region"
+     class="bg-white border border-gray-200 rounded-xl p-6 flex flex-col items-center gap-3 hover:border-green-500 hover:shadow-md transition">
+    <span class="text-4xl">🏔️</span>
+    <span class="font-semibold text-gray-700">依地區查詢</span>
+    <span class="text-sm text-gray-400 text-center">依縣市與山區瀏覽出隊紀錄</span>
   </a>
-  {% endfor %}
+  <a href="/date"
+     class="bg-white border border-gray-200 rounded-xl p-6 flex flex-col items-center gap-3 hover:border-green-500 hover:shadow-md transition">
+    <span class="text-4xl">📅</span>
+    <span class="font-semibold text-gray-700">依日期查詢</span>
+    <span class="text-sm text-gray-400 text-center">依年份或月份篩選出隊紀錄</span>
+  </a>
+  <a href="/search"
+     class="bg-white border border-gray-200 rounded-xl p-6 flex flex-col items-center gap-3 hover:border-green-500 hover:shadow-md transition">
+    <span class="text-4xl">🔍</span>
+    <span class="font-semibold text-gray-700">文字搜尋</span>
+    <span class="text-sm text-gray-400 text-center">搜尋隊伍名稱、地點等關鍵字</span>
+  </a>
 </div>
+
+{# ── 最近出隊紀錄 ── #}
+<section>
+  <h2 class="text-base font-semibold text-gray-500 uppercase tracking-wide mb-4">最近出隊紀錄</h2>
+  {% if recent %}
+    <ul class="space-y-2">
+      {% for exp in recent %}
+      <li>
+        <a href="/expedition/{{ exp.id }}"
+           class="flex items-center justify-between bg-white border border-gray-200 rounded-lg px-5 py-4
+                  hover:border-green-500 hover:bg-green-50 transition group">
+          <span class="font-medium text-gray-800 group-hover:text-green-800">{{ exp.name }}</span>
+          <span class="text-sm text-gray-400">
+            {{ exp.date_start }}{% if exp.date_end %} ～ {{ exp.date_end }}{% endif %}
+            {% if exp.county %}　{{ exp.county }}{% if exp.region %} · {{ exp.region }}{% endif %}{% endif %}
+          </span>
+        </a>
+      </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p class="text-gray-400 text-sm">尚無出隊紀錄。</p>
+  {% endif %}
+</section>
+
 {% endblock %}

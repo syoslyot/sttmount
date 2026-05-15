@@ -1,24 +1,42 @@
 {% extends "base.html" %}
 {% block title %}搜尋 — 山社出隊紀錄{% endblock %}
 {% block content %}
-<h1 class="text-2xl font-bold mb-6">搜尋</h1>
+
+<nav class="text-sm text-gray-400 mb-6">
+  <a href="/" class="hover:text-green-700">首頁</a> › 搜尋
+</nav>
+
+<h1 class="text-xl font-bold text-gray-700 mb-6">文字搜尋</h1>
+
 <form method="get" class="flex gap-3 mb-8">
-  <input type="text" name="q" value="{{ q }}" placeholder="隊伍名稱、地點…"
-         class="border rounded px-3 py-2 flex-1">
-  <button type="submit" class="bg-green-700 text-white px-4 py-2 rounded hover:bg-green-800">搜尋</button>
+  <input type="text" name="q" value="{{ q }}" placeholder="輸入隊伍名稱、地點、關鍵字…"
+         class="border border-gray-200 rounded-lg px-3 py-2 flex-1 text-sm focus:outline-none focus:border-green-500"
+         autofocus>
+  <button type="submit"
+          class="bg-green-700 text-white px-5 py-2 rounded-lg text-sm hover:bg-green-800 transition">
+    搜尋
+  </button>
 </form>
+
 {% if expeditions %}
-  <ul class="space-y-3">
+  <p class="text-sm text-gray-400 mb-4">共找到 {{ expeditions | length }} 筆結果</p>
+  <ul class="space-y-2">
     {% for exp in expeditions %}
-    <li class="bg-white border rounded-lg p-4 hover:shadow transition">
-      <a href="/expedition/{{ exp.id }}" class="block">
-        <div class="font-semibold text-green-800">{{ exp.name }}</div>
-        <div class="text-sm text-gray-500">{{ exp.date_start }} ｜ {{ exp.county }} {{ exp.region }}</div>
+    <li>
+      <a href="/expedition/{{ exp.id }}"
+         class="flex items-center justify-between bg-white border-l-4 border-l-transparent border border-gray-200
+                rounded-lg px-5 py-4 hover:border-l-green-600 hover:bg-green-50 transition group">
+        <span class="font-medium text-gray-800 group-hover:text-green-800">{{ exp.name }}</span>
+        <span class="text-sm text-gray-400">
+          {{ exp.date_start }}
+          {% if exp.county %}　{{ exp.county }}{% if exp.region %} · {{ exp.region }}{% endif %}{% endif %}
+        </span>
       </a>
     </li>
     {% endfor %}
   </ul>
 {% elif q %}
-  <p class="text-gray-500">查無「{{ q }}」相關紀錄。</p>
+  <p class="text-gray-400 text-sm">查無「{{ q }}」相關紀錄。</p>
 {% endif %}
+
 {% endblock %}

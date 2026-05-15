@@ -7,14 +7,35 @@
   <script src="https://cdn.tailwindcss.com"></script>
   {% block head %}{% endblock %}
 </head>
-<body class="bg-gray-50 text-gray-800 min-h-screen">
-  <nav class="bg-green-800 text-white px-6 py-3 flex gap-6 items-center">
-    <a href="/" class="font-bold text-lg">山社出隊紀錄</a>
-    <a href="/date" class="hover:underline">依日期</a>
-    <a href="/search" class="hover:underline">搜尋</a>
+<body class="bg-gray-50 text-gray-800 min-h-screen flex flex-col">
+
+  {# ── Navbar ── #}
+  {% set path = request.url.path %}
+  <nav class="bg-green-800 text-white px-6 py-3 flex items-center justify-between shadow">
+    <a href="/" class="font-bold text-lg tracking-wide">山社出隊紀錄</a>
+    <div class="flex gap-6 text-sm font-medium">
+      <a href="/region"
+         class="hover:text-green-200 transition {% if path.startswith('/region') %}border-b-2 border-white pb-0.5{% endif %}">
+        地區查詢
+      </a>
+      <a href="/date"
+         class="hover:text-green-200 transition {% if path.startswith('/date') %}border-b-2 border-white pb-0.5{% endif %}">
+        依日期
+      </a>
+      <a href="/search"
+         class="hover:text-green-200 transition {% if path.startswith('/search') %}border-b-2 border-white pb-0.5{% endif %}">
+        搜尋
+      </a>
+    </div>
   </nav>
-  <main class="max-w-5xl mx-auto px-4 py-8">
+
+  <main class="max-w-5xl w-full mx-auto px-4 py-8 flex-1">
     {% block content %}{% endblock %}
   </main>
+
+  <footer class="text-center text-xs text-gray-400 py-4">
+    NCKU 山社出隊紀錄系統
+  </footer>
+
 </body>
 </html>
