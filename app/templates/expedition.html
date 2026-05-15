@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block title %}{{ exp.name }} — 成大山協{% endblock %}
-{% block main_class %}flex overflow-hidden{% endblock %}
+{% block main_class %}flex overflow-hidden h-[calc(100vh-57px)]{% endblock %}
 
 {% block head %}
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
@@ -18,137 +18,97 @@
   <div id="map" class="w-full h-full"></div>
 </div>
 
-{# ── 右半：出隊資訊 ── #}
-<div class="w-1/2 overflow-y-auto px-8 py-8 space-y-8">
+{# ── 右半：出隊資訊（獨立捲動）── #}
+<div class="w-1/2 h-full overflow-y-auto px-8 py-8 space-y-6">
 
-  {# 標題 + 基本資訊 #}
-  <div>
-    <h1 class="text-2xl font-bold text-gray-800 mb-3">{{ exp.name }}</h1>
-    <div class="flex flex-wrap gap-3">
-      <span class="inline-flex items-center gap-1.5 bg-gray-100 text-gray-600 text-sm rounded-full px-3 py-1">
-        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5"/>
-        </svg>
-        {{ exp.date_start }}{% if exp.date_end %} ～ {{ exp.date_end }}{% endif %}
-      </span>
-      {% if exp.county %}
-      <span class="inline-flex items-center gap-1.5 bg-green-50 text-green-700 text-sm rounded-full px-3 py-1">
-        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0z"/>
-          <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0z"/>
-        </svg>
-        {{ exp.county }}{% if exp.region %} · {{ exp.region }}{% endif %}
-      </span>
-      {% endif %}
-    </div>
-  </div>
+  {# 標題 #}
+  <h1 class="text-2xl font-bold text-gray-800">{{ exp.name }}</h1>
 
   {# P1 截圖：計畫書 #}
   {% if p1_preview %}
-  <section>
-    <h2 class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">計畫書</h2>
-    <img src="/static/maps/{{ exp.id }}/p1_preview.png" alt="出隊計畫書"
-         class="w-full rounded-xl border border-gray-200">
-  </section>
+  <img src="/static/maps/{{ exp.id }}/p1_preview.png" alt="出隊計畫書"
+       class="w-full rounded-xl border border-gray-200">
   {% endif %}
 
   {# P2 截圖：留守資料 #}
   {% if p2_preview %}
-  <section>
-    <h2 class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">留守資料</h2>
-    <img src="/static/maps/{{ exp.id }}/p2_preview.png" alt="留守資料"
-         class="w-full rounded-xl border border-gray-200">
-  </section>
+  <img src="/static/maps/{{ exp.id }}/p2_preview.png" alt="留守資料"
+       class="w-full rounded-xl border border-gray-200">
   {% endif %}
 
   {# 人員名單 #}
   {% if members %}
-  <section>
-    <h2 class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">
-      人員名單
-      <span class="font-normal normal-case text-gray-300">（{{ members | length }} 人）</span>
-    </h2>
-    <div class="bg-white border border-gray-200 rounded-xl overflow-hidden">
-      <table class="w-full text-sm">
-        <thead class="bg-gray-50 text-gray-400 border-b border-gray-200 text-xs">
-          <tr>
-            <th class="text-left px-4 py-2">姓名</th>
-            <th class="text-left px-4 py-2">角色</th>
-            <th class="text-left px-4 py-2">系級</th>
-            <th class="text-left px-4 py-2">資歷</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for m in members %}
-          <tr class="border-b border-gray-100 last:border-0">
-            <td class="px-4 py-2 text-gray-800">{{ m.name }}</td>
-            <td class="px-4 py-2 text-gray-500">{{ m.role or '—' }}</td>
-            <td class="px-4 py-2 text-gray-500">{{ m.department or '—' }}</td>
-            <td class="px-4 py-2 text-gray-500">{{ m.experience or '—' }}</td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-  </section>
+  <div class="bg-white border border-gray-200 rounded-xl overflow-hidden">
+    <table class="w-full text-sm">
+      <thead class="bg-gray-50 text-gray-400 border-b border-gray-200 text-xs">
+        <tr>
+          <th class="text-left px-4 py-2">姓名</th>
+          <th class="text-left px-4 py-2">角色</th>
+          <th class="text-left px-4 py-2">系級</th>
+          <th class="text-left px-4 py-2">資歷</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for m in members %}
+        <tr class="border-b border-gray-100 last:border-0">
+          <td class="px-4 py-2 text-gray-800">{{ m.name }}</td>
+          <td class="px-4 py-2 text-gray-500">{{ m.role or '—' }}</td>
+          <td class="px-4 py-2 text-gray-500">{{ m.department or '—' }}</td>
+          <td class="px-4 py-2 text-gray-500">{{ m.experience or '—' }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
   {% endif %}
 
   {# 成員紀錄（txt） #}
   {% if records %}
-  <section>
-    <h2 class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">紀錄</h2>
-    <div class="space-y-2">
-      {% for r in records %}
-      <details class="bg-white border border-gray-200 rounded-xl overflow-hidden group">
-        <summary class="flex items-center justify-between px-4 py-3 cursor-pointer select-none text-sm text-gray-700 hover:bg-gray-50">
-          <span class="font-medium">{{ r.filename }}</span>
-          <svg class="w-4 h-4 text-gray-400 transition-transform group-open:rotate-180" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" d="m19 9-7 7-7-7"/>
-          </svg>
-        </summary>
-        <div class="border-t border-gray-100 px-4 py-3">
-          <pre class="whitespace-pre-wrap text-sm text-gray-700 font-mono leading-relaxed max-h-80 overflow-y-auto">{{ r.content }}</pre>
-        </div>
-      </details>
-      {% endfor %}
-    </div>
-  </section>
+  <div class="space-y-2">
+    {% for r in records %}
+    <details class="bg-white border border-gray-200 rounded-xl overflow-hidden group">
+      <summary class="flex items-center justify-between px-4 py-3 cursor-pointer select-none text-sm text-gray-700 hover:bg-gray-50">
+        <span class="font-medium">{{ r.filename }}</span>
+        <svg class="w-4 h-4 text-gray-400 transition-transform group-open:rotate-180" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="m19 9-7 7-7-7"/>
+        </svg>
+      </summary>
+      <div class="border-t border-gray-100 px-4 py-3">
+        <pre class="whitespace-pre-wrap text-sm text-gray-700 font-mono leading-relaxed max-h-80 overflow-y-auto">{{ r.content }}</pre>
+      </div>
+    </details>
+    {% endfor %}
+  </div>
   {% endif %}
 
   {# 航蹟下載 #}
   {% if gpx_files %}
-  <section>
-    <h2 class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">航蹟下載</h2>
-    <div class="flex flex-wrap gap-2">
-      {% for f in gpx_files %}
-      <a href="/static/gpx/{{ f.file_path }}" download
-         class="inline-flex items-center gap-2 bg-white border border-gray-200 rounded-lg px-4 py-2.5 text-sm text-gray-700 hover:border-green-400 hover:text-green-700 transition-colors">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3"/>
-        </svg>
-        {{ f.filename }}
-      </a>
-      {% endfor %}
-    </div>
-  </section>
+  <div class="flex flex-wrap gap-2">
+    {% for f in gpx_files %}
+    <a href="/static/gpx/{{ f.file_path }}" download
+       class="inline-flex items-center gap-2 bg-white border border-gray-200 rounded-lg px-4 py-2.5 text-sm text-gray-700 hover:border-green-400 hover:text-green-700 transition-colors">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3"/>
+      </svg>
+      {{ f.filename }}
+    </a>
+    {% endfor %}
+  </div>
   {% endif %}
 
   {# 地圖下載 #}
   {% if map_files %}
-  <section>
-    <h2 class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">地圖下載</h2>
-    <div class="flex flex-wrap gap-2">
-      {% for f in map_files %}
-      <a href="/static/maps/{{ f.file_path }}" download
-         class="inline-flex items-center gap-2 bg-white border border-gray-200 rounded-lg px-4 py-2.5 text-sm text-gray-700 hover:border-green-400 hover:text-green-700 transition-colors">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3"/>
-        </svg>
-        {{ f.filename }}
-      </a>
-      {% endfor %}
-    </div>
-  </section>
+  <div class="flex flex-wrap gap-2">
+    {% for f in map_files %}
+    <a href="/static/maps/{{ f.file_path }}" download
+       class="inline-flex items-center gap-2 bg-white border border-gray-200 rounded-lg px-4 py-2.5 text-sm text-gray-700 hover:border-green-400 hover:text-green-700 transition-colors">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3"/>
+      </svg>
+      {{ f.filename }}
+    </a>
+    {% endfor %}
+  </div>
   {% endif %}
 
 </div>
