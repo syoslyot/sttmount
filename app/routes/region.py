@@ -67,8 +67,11 @@ def fragment_recent(request: Request):
 
 @router.get("/fragment/county/{name}", response_class=HTMLResponse)
 def fragment_county(request: Request, name: str):
-    counties = COUNTY_MAP.get(name, [name])
-    items = _query_expeditions(counties)
+    with get_conn() as conn:
+        items = conn.execute(
+            "SELECT * FROM expeditions WHERE county = ? ORDER BY date_start DESC LIMIT 5",
+            (name,)
+        ).fetchall()
     return templates.TemplateResponse("_results.html", {
         "request": request, "items": items, "title": name,
     })
