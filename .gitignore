@@ -5,3 +5,4 @@ __pycache__/
 db/sttmount.db
 !db/.gitkeep
 .claude/
+.playwright-mcp/
