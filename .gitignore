@@ -4,5 +4,9 @@ __pycache__/
 .env
 db/sttmount.db
 !db/.gitkeep
+app/static/gpx/*
+!app/static/gpx/.gitkeep
+app/static/maps/*
+!app/static/maps/.gitkeep
 .claude/
 .playwright-mcp/
