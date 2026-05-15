@@ -73,6 +73,9 @@ def capture_sheet_range(xlsx_path: Path, sheet_name: str, cell_range: str, outpu
         wb = openpyxl.load_workbook(xlsx_path, data_only=True)
         ws = wb[sheet_name]
         ws.print_area = cell_range
+        for name in list(wb.sheetnames):
+            if name != sheet_name:
+                del wb[name]
         tmp_xlsx = tmp / "preview.xlsx"
         wb.save(tmp_xlsx)
         result = subprocess.run(
@@ -212,7 +215,7 @@ def normalize(xlsx_path: Path):
         print("完成" if (out_dir / "p1_preview.png").exists() else "失敗")
     if "直企P2(列印)" in wb.sheetnames:
         print(f"    截圖 P2...", end=" ", flush=True)
-        capture_sheet_range(xlsx_path, "直企P2(列印)", "B1:O14", out_dir / "p2_preview.png")
+        capture_sheet_range(xlsx_path, "直企P2(列印)", "B2:O11", out_dir / "p2_preview.png")
         print("完成" if (out_dir / "p2_preview.png").exists() else "失敗")
 
 
