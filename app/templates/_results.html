@@ -1,0 +1,15 @@
+{% if items %}
+  {% for exp in items %}
+  <a href="/expedition/{{ exp.id }}"
+     class="flex flex-col bg-white border border-gray-200 rounded-lg px-4 py-2.5
+            hover:border-green-500 hover:bg-green-50 transition group block">
+    <span class="font-medium text-gray-800 text-sm group-hover:text-green-800">{{ exp.name }}</span>
+    <span class="text-xs text-gray-400 mt-0.5">
+      {{ exp.date_start }}{% if exp.date_end %} ～ {{ exp.date_end }}{% endif %}
+      {% if exp.county %}　{{ exp.county }}{% if exp.region %} · {{ exp.region }}{% endif %}{% endif %}
+    </span>
+  </a>
+  {% endfor %}
+{% else %}
+  <p class="text-gray-400 text-sm">查無出隊紀錄。</p>
+{% endif %}

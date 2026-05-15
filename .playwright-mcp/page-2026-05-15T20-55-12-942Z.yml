@@ -1,0 +1,32 @@
+- generic [active] [ref=e1]:
+  - navigation [ref=e2]:
+    - link "山社出隊紀錄" [ref=e3] [cursor=pointer]:
+      - /url: /
+    - generic [ref=e4]:
+      - link "地區查詢" [ref=e5] [cursor=pointer]:
+        - /url: /region
+      - link "依日期" [ref=e6] [cursor=pointer]:
+        - /url: /date
+      - link "搜尋" [ref=e7] [cursor=pointer]:
+        - /url: /search
+  - main [ref=e8]:
+    - generic [ref=e9]:
+      - link "🏔️ 依地區查詢 依縣市與山區瀏覽出隊紀錄" [ref=e10] [cursor=pointer]:
+        - /url: /region
+        - generic [ref=e11]: 🏔️
+        - generic [ref=e12]: 依地區查詢
+        - generic [ref=e13]: 依縣市與山區瀏覽出隊紀錄
+      - link "📅 依日期查詢 依年份或月份篩選出隊紀錄" [ref=e14] [cursor=pointer]:
+        - /url: /date
+        - generic [ref=e15]: 📅
+        - generic [ref=e16]: 依日期查詢
+        - generic [ref=e17]: 依年份或月份篩選出隊紀錄
+      - link "🔍 文字搜尋 搜尋隊伍名稱、地點等關鍵字" [ref=e18] [cursor=pointer]:
+        - /url: /search
+        - generic [ref=e19]: 🔍
+        - generic [ref=e20]: 文字搜尋
+        - generic [ref=e21]: 搜尋隊伍名稱、地點等關鍵字
+    - generic [ref=e22]:
+      - heading "最近出隊紀錄" [level=2] [ref=e23]
+      - paragraph [ref=e24]: 尚無出隊紀錄。
+  - contentinfo [ref=e25]: NCKU 山社出隊紀錄系統

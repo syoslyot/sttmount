@@ -1,51 +1,162 @@
 {% extends "base.html" %}
-{% block title %}山社出隊紀錄{% endblock %}
+{% block title %}成大山協{% endblock %}
+{% block main_class %}flex overflow-hidden{% endblock %}
+
 {% block content %}
 
-{# ── 三個功能入口 ── #}
-<div class="grid grid-cols-3 gap-4 mb-10">
-  <a href="/region"
-     class="bg-white border border-gray-200 rounded-xl p-6 flex flex-col items-center gap-3 hover:border-green-500 hover:shadow-md transition">
-    <span class="text-4xl">🏔️</span>
-    <span class="font-semibold text-gray-700">依地區查詢</span>
-    <span class="text-sm text-gray-400 text-center">依縣市與山區瀏覽出隊紀錄</span>
-  </a>
-  <a href="/date"
-     class="bg-white border border-gray-200 rounded-xl p-6 flex flex-col items-center gap-3 hover:border-green-500 hover:shadow-md transition">
-    <span class="text-4xl">📅</span>
-    <span class="font-semibold text-gray-700">依日期查詢</span>
-    <span class="text-sm text-gray-400 text-center">依年份或月份篩選出隊紀錄</span>
-  </a>
-  <a href="/search"
-     class="bg-white border border-gray-200 rounded-xl p-6 flex flex-col items-center gap-3 hover:border-green-500 hover:shadow-md transition">
-    <span class="text-4xl">🔍</span>
-    <span class="font-semibold text-gray-700">文字搜尋</span>
-    <span class="text-sm text-gray-400 text-center">搜尋隊伍名稱、地點等關鍵字</span>
-  </a>
+{# ── 左半：模式切換 ── #}
+<div class="w-1/2 border-r border-gray-200 flex flex-col overflow-hidden">
+
+  {# Tab 列 #}
+  <div class="flex border-b border-gray-200 shrink-0">
+    <button id="tab-map" onclick="setMode('map')"
+      class="flex-1 py-3 flex items-center justify-center gap-2 text-sm font-medium transition border-b-2 border-transparent">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round"
+          d="M9 6.75V15m6-6v8.25m.503 3.498 4.875-2.437c.381-.19.622-.58.622-1.006V4.82c0-.836-.88-1.38-1.628-1.006l-3.869 1.934c-.317.159-.69.159-1.006 0L9.503 3.252a1.125 1.125 0 0 0-1.006 0L3.622 5.689C3.24 5.88 3 6.27 3 6.695V19.18c0 .836.88 1.38 1.628 1.006l3.869-1.934c.317-.159.69-.159 1.006 0l4.994 2.497c.317.158.69.158 1.006 0z"/>
+      </svg>
+      地區
+    </button>
+    <button id="tab-date" onclick="setMode('date')"
+      class="flex-1 py-3 flex items-center justify-center gap-2 text-sm font-medium transition border-b-2 border-transparent">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round"
+          d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5"/>
+      </svg>
+      日期
+    </button>
+    <button id="tab-search" onclick="setMode('search')"
+      class="flex-1 py-3 flex items-center justify-center gap-2 text-sm font-medium transition border-b-2 border-transparent">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round"
+          d="M21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 15.803 7.5 7.5 0 0 0 16.803 15.803z"/>
+      </svg>
+      搜尋
+    </button>
+  </div>
+
+  {# 地圖模式：台灣縣市格 #}
+  <div id="mode-map" class="flex-1 overflow-y-auto p-5">
+    <div class="grid gap-1.5"
+         style="grid-template-columns: repeat(5, 1fr); grid-template-rows: repeat(10, 2.25rem);">
+      {% for display, counties, col, row in county_grid %}
+      <button
+        style="grid-column-start:{{ col }}; grid-row-start:{{ row }}"
+        onclick="loadCounty('{{ display }}', this)"
+        data-counties="{{ counties | join(',') }}"
+        class="county-btn rounded text-xs font-medium bg-white border border-gray-200
+               hover:bg-green-50 hover:border-green-500 hover:text-green-800 transition
+               flex items-center justify-center">
+        {{ display }}
+      </button>
+      {% endfor %}
+    </div>
+  </div>
+
+  {# 日期模式 #}
+  <div id="mode-date" class="hidden flex-1 overflow-y-auto p-5">
+    <p class="text-xs text-gray-400 mb-4">輸入年份（必填）與月份（選填）後查詢</p>
+    <div class="flex flex-col gap-3">
+      <input id="date-year" type="number" placeholder="年份（如 2024）"
+             class="border border-gray-200 rounded-lg px-3 py-2 text-sm w-full focus:outline-none focus:border-green-500">
+      <input id="date-month" type="number" placeholder="月份（1–12，可不填）" min="1" max="12"
+             class="border border-gray-200 rounded-lg px-3 py-2 text-sm w-full focus:outline-none focus:border-green-500">
+      <button onclick="loadDate()"
+              class="bg-green-700 text-white rounded-lg py-2 text-sm hover:bg-green-800 transition">
+        查詢
+      </button>
+    </div>
+  </div>
+
+  {# 搜尋模式 #}
+  <div id="mode-search" class="hidden flex-1 overflow-y-auto p-5">
+    <p class="text-xs text-gray-400 mb-4">輸入關鍵字後按 Enter 或點搜尋</p>
+    <div class="flex flex-col gap-3">
+      <input id="search-q" type="text" placeholder="隊伍名稱、地點、關鍵字…"
+             class="border border-gray-200 rounded-lg px-4 py-2.5 text-sm w-full focus:outline-none focus:border-green-500"
+             onkeydown="if(event.key==='Enter') loadSearch()">
+      <button onclick="loadSearch()"
+              class="bg-green-700 text-white rounded-lg py-2 text-sm hover:bg-green-800 transition">
+        搜尋
+      </button>
+    </div>
+  </div>
+
 </div>
 
-{# ── 最近出隊紀錄 ── #}
-<section>
-  <h2 class="text-base font-semibold text-gray-500 uppercase tracking-wide mb-4">最近出隊紀錄</h2>
-  {% if recent %}
-    <ul class="space-y-2">
+{# ── 右半：結果 ── #}
+<div class="w-1/2 flex flex-col overflow-hidden">
+  <div class="px-5 py-3 border-b border-gray-200 shrink-0">
+    <span id="result-title" class="text-xs font-semibold text-gray-400 uppercase tracking-wide">最近出隊</span>
+  </div>
+  <div id="results" class="flex-1 overflow-y-auto p-5 space-y-1.5">
+    {% if recent %}
       {% for exp in recent %}
-      <li>
-        <a href="/expedition/{{ exp.id }}"
-           class="flex items-center justify-between bg-white border border-gray-200 rounded-lg px-5 py-4
-                  hover:border-green-500 hover:bg-green-50 transition group">
-          <span class="font-medium text-gray-800 group-hover:text-green-800">{{ exp.name }}</span>
-          <span class="text-sm text-gray-400">
-            {{ exp.date_start }}{% if exp.date_end %} ～ {{ exp.date_end }}{% endif %}
-            {% if exp.county %}　{{ exp.county }}{% if exp.region %} · {{ exp.region }}{% endif %}{% endif %}
-          </span>
-        </a>
-      </li>
+      <a href="/expedition/{{ exp.id }}"
+         class="flex flex-col bg-white border border-gray-200 rounded-lg px-4 py-2.5
+                hover:border-green-500 hover:bg-green-50 transition group block">
+        <span class="font-medium text-gray-800 text-sm group-hover:text-green-800">{{ exp.name }}</span>
+        <span class="text-xs text-gray-400 mt-0.5">
+          {{ exp.date_start }}{% if exp.date_end %} ～ {{ exp.date_end }}{% endif %}
+          {% if exp.county %}　{{ exp.county }}{% if exp.region %} · {{ exp.region }}{% endif %}{% endif %}
+        </span>
+      </a>
       {% endfor %}
-    </ul>
-  {% else %}
-    <p class="text-gray-400 text-sm">尚無出隊紀錄。</p>
-  {% endif %}
-</section>
+    {% else %}
+      <p class="text-gray-400 text-sm">尚無出隊紀錄。</p>
+    {% endif %}
+  </div>
+</div>
+
+<script>
+  const INITIAL_MODE = "{{ initial_mode }}";
+
+  function setMode(mode) {
+    ['map','date','search'].forEach(m => {
+      document.getElementById('mode-' + m).classList.add('hidden');
+      const tab = document.getElementById('tab-' + m);
+      tab.classList.remove('border-green-600', 'text-green-800');
+      tab.classList.add('border-transparent', 'text-gray-500');
+    });
+    document.getElementById('mode-' + mode).classList.remove('hidden');
+    const activeTab = document.getElementById('tab-' + mode);
+    activeTab.classList.remove('border-transparent', 'text-gray-500');
+    activeTab.classList.add('border-green-600', 'text-green-800');
+    if (mode !== 'map') {
+      // 切換模式時清除縣市選取
+      document.querySelectorAll('.county-btn').forEach(b => b.classList.remove('bg-green-100','border-green-600','text-green-800'));
+    }
+  }
+
+  async function updateResults(url, title) {
+    document.getElementById('result-title').textContent = title;
+    const resp = await fetch(url);
+    document.getElementById('results').innerHTML = await resp.text();
+  }
+
+  function loadCounty(name, btn) {
+    document.querySelectorAll('.county-btn').forEach(b =>
+      b.classList.remove('bg-green-100','border-green-600','text-green-800'));
+    btn.classList.add('bg-green-100','border-green-600','text-green-800');
+    updateResults('/fragment/county/' + encodeURIComponent(name), name);
+  }
+
+  function loadDate() {
+    const year  = document.getElementById('date-year').value;
+    const month = document.getElementById('date-month').value;
+    if (!year) return;
+    const title = year + '年' + (month ? month + '月' : '');
+    updateResults('/fragment/date?year=' + year + (month ? '&month=' + month : ''), title);
+  }
+
+  function loadSearch() {
+    const q = document.getElementById('search-q').value.trim();
+    if (!q) return;
+    updateResults('/fragment/search?q=' + encodeURIComponent(q), '「' + q + '」');
+  }
+
+  // 初始模式
+  setMode(INITIAL_MODE);
+</script>
 
 {% endblock %}
