@@ -41,9 +41,7 @@ CREATE TABLE IF NOT EXISTS gpx_files (
 CREATE TABLE IF NOT EXISTS map_files (
     id            INTEGER PRIMARY KEY AUTOINCREMENT,
     expedition_id INTEGER NOT NULL REFERENCES expeditions(id) ON DELETE CASCADE,
-    filename      TEXT NOT NULL,
-    file_path     TEXT NOT NULL UNIQUE,
-    file_type     TEXT NOT NULL CHECK(file_type IN ('pdf', 'image'))
+    file_path     TEXT NOT NULL UNIQUE
 );
 
 CREATE TABLE IF NOT EXISTS records (
