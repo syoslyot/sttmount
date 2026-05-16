@@ -145,50 +145,53 @@ def build_a4_preview(paths: list[Path], output_path: Path):
 
 
 def scan_static_files(exp_name: str, exp_id: int, conn: sqlite3.Connection):
-    for ext in ('.gpx', '.GPX', '.kml', '.KML'):
-        src = GPX_DIR / f"{exp_name}{ext}"
-        if src.exists():
-            dest = GPX_DIR / f"{exp_id}{ext.lower()}"
-            src.rename(dest)
+    prefix = exp_name + '_'
+
+    for src in sorted(GPX_DIR.glob(f"{exp_name}_*")):
+        if src.suffix.lower() in GPX_EXTS:
+            original = src.name[len(prefix):]
+            dest = GPX_DIR / f"{exp_id}_{original}"
+            if src != dest and not dest.exists():
+                src.rename(dest)
             conn.execute(
-                "INSERT OR IGNORE INTO gpx_files(expedition_id, file_path) VALUES (?, ?)",
+                "INSERT OR IGNORE INTO gpx_files(expedition_id, file_path) VALUES (?,?)",
                 (exp_id, dest.name),
             )
-            break
 
-    for ext in ('.pdf', '.PDF'):
-        src = STATIC_MAPS / f"{exp_name}{ext}"
-        if src.exists():
-            dest = STATIC_MAPS / f"{exp_id}{ext.lower()}"
-            src.rename(dest)
+    for src in sorted(STATIC_MAPS.glob(f"{exp_name}_*")):
+        if src.suffix.lower() in MAP_EXTS:
+            original = src.name[len(prefix):]
+            dest = STATIC_MAPS / f"{exp_id}_{original}"
+            if src != dest and not dest.exists():
+                src.rename(dest)
             conn.execute(
-                "INSERT OR IGNORE INTO map_files(expedition_id, file_path) VALUES (?, ?)",
+                "INSERT OR IGNORE INTO map_files(expedition_id, file_path) VALUES (?,?)",
                 (exp_id, dest.name),
             )
-            break
 
-    txt_src = TXT_DIR / exp_name
-    if txt_src.is_dir():
-        txt_dest = TXT_DIR / str(exp_id)
-        if txt_src != txt_dest:
-            txt_src.rename(txt_dest)
-        for f in sorted(txt_dest.iterdir()):
-            if f.suffix.lower() in RECORD_EXTS:
-                exists = conn.execute(
-                    "SELECT 1 FROM records WHERE expedition_id=? AND filename=?",
-                    (exp_id, f.name),
-                ).fetchone()
-                if not exists:
-                    if f.suffix.lower() == ".docx":
-                        from docx import Document
-                        doc = Document(f)
-                        content = "\n".join(p.text for p in doc.paragraphs if p.text.strip())
-                    else:
-                        content = f.read_text(encoding="utf-8", errors="replace")
-                    conn.execute(
-                        "INSERT INTO records(expedition_id, filename, content) VALUES (?, ?, ?)",
-                        (exp_id, f.name, content),
-                    )
+    for src in sorted(TXT_DIR.glob(f"{exp_name}_*")):
+        if src.suffix.lower() not in RECORD_EXTS:
+            continue
+        original = src.name[len(prefix):]
+        dest = TXT_DIR / f"{exp_id}_{original}"
+        if src != dest and not dest.exists():
+            src.rename(dest)
+        exists = conn.execute(
+            "SELECT 1 FROM records WHERE expedition_id=? AND filename=?",
+            (exp_id, dest.name),
+        ).fetchone()
+        if not exists:
+            if dest.suffix.lower() == ".docx":
+                from docx import Document
+                content = "\n".join(
+                    p.text for p in Document(dest).paragraphs if p.text.strip()
+                )
+            else:
+                content = dest.read_text(encoding="utf-8", errors="replace")
+            conn.execute(
+                "INSERT INTO records(expedition_id, filename, content) VALUES (?,?,?)",
+                (exp_id, dest.name, content),
+            )
 
     conn.commit()
     print(f"    靜態檔案已掃描：{exp_name}/")
@@ -283,7 +286,7 @@ def normalize(xlsx_path: Path):
     if existing:
         exp_id = existing[0]
         print(f"  → 已存在（id={exp_id}）：{name}，補掃靜態檔案")
-        scan_static_files(xlsx_path.stem, exp_id, conn)
+        scan_static_files(name, exp_id, conn)
         conn.close()
         return
 
@@ -309,12 +312,18 @@ def normalize(xlsx_path: Path):
         )
     conn.commit()
 
-    xlsx_stem = xlsx_path.stem
-    xlsx_final = xlsx_path.parent / f"{exp_id}.xlsx"
+    prefix = name + '_'
+    if xlsx_path.stem.startswith(prefix):
+        original = xlsx_path.stem[len(prefix):] + xlsx_path.suffix
+        xlsx_final = xlsx_path.parent / f"{exp_id}_{original}"
+    elif xlsx_path.stem.startswith(f"{exp_id}_"):
+        xlsx_final = xlsx_path
+    else:
+        xlsx_final = xlsx_path
     if xlsx_path != xlsx_final and not xlsx_final.exists():
         xlsx_path.rename(xlsx_final)
 
-    scan_static_files(xlsx_stem, exp_id, conn)
+    scan_static_files(name, exp_id, conn)
     conn.close()
 
     print(f"  ✓ 已插入：{name}（id={exp_id}）")
