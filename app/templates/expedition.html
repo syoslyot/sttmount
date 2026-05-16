@@ -57,7 +57,7 @@
 
   {# 人員名單 #}
   {% if members %}
-  <details class="bg-white border border-gray-200 rounded-xl overflow-hidden group" open>
+  <details class="bg-white border border-gray-200 rounded-xl overflow-hidden group">
     <summary class="flex items-center justify-between px-4 py-3 cursor-pointer select-none text-sm text-gray-700 hover:bg-gray-50">
       <span class="font-medium">人員名單</span>
       <svg class="w-4 h-4 text-gray-400 transition-transform group-open:rotate-180" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -93,7 +93,7 @@
   {% if records %}
   <div class="space-y-2">
     {% for r in records %}
-    <details class="bg-white border border-gray-200 rounded-xl overflow-hidden group">
+    <details class="bg-white border border-gray-200 rounded-xl overflow-hidden group" open>
       <summary class="flex items-center justify-between px-4 py-3 cursor-pointer select-none text-sm text-gray-700 hover:bg-gray-50">
         <span class="font-medium">{{ r.filename }}</span>
         <svg class="w-4 h-4 text-gray-400 transition-transform group-open:rotate-180" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
