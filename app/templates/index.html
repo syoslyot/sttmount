@@ -15,15 +15,15 @@
   {# Tab 列 #}
   <div class="flex shrink-0 border-b border-gray-100">
     <button id="tab-map" onclick="setMode('map')"
-      class="tab-btn flex-1 py-3.5 flex items-center justify-center text-[16px] font-medium transition border-b-2 border-transparent">
+      class="tab-btn flex-1 py-3.5 flex items-center justify-center text-[18px] font-medium transition border-b-2 border-transparent">
       地區
     </button>
     <button id="tab-date" onclick="setMode('date')"
-      class="tab-btn flex-1 py-3.5 flex items-center justify-center text-[16px] font-medium transition border-b-2 border-transparent">
+      class="tab-btn flex-1 py-3.5 flex items-center justify-center text-[18px] font-medium transition border-b-2 border-transparent">
       日期
     </button>
     <button id="tab-search" onclick="setMode('search')"
-      class="tab-btn flex-1 py-3.5 flex items-center justify-center text-[16px] font-medium transition border-b-2 border-transparent">
+      class="tab-btn flex-1 py-3.5 flex items-center justify-center text-[18px] font-medium transition border-b-2 border-transparent">
       關鍵字
     </button>
   </div>
@@ -77,7 +77,7 @@
 </div>
 
 {# ── 右半：結果 ── #}
-<div id="results" class="w-1/2 overflow-y-auto px-6 py-5 space-y-2" style="height: calc(100vh - 65px);"></div>
+<div id="results" class="w-1/2 overflow-y-auto px-6 pt-8 pb-6 space-y-3" style="height: calc(100vh - 65px);"></div>
 
 <script>
   const INITIAL_MODE = "{{ initial_mode }}";
@@ -98,6 +98,7 @@
   };
   const ISLANDS = new Set(["澎湖縣","金門縣","連江縣"]);
   let selectedCounty = null;
+  let visualLayer = null;
 
   function initMap() {
     const svgEl = document.getElementById("taiwan-map");
@@ -115,34 +116,42 @@
         const proj = d3.geoMercator().fitExtent([[padding, padding], [w - padding, h - padding]], mainGeoJSON);
         const path = d3.geoPath().projection(proj);
 
-        svg.selectAll("path")
-          .data(counties.features)
-          .join("path")
+        const g   = svg.append("g");
+        const hit = svg.append("g");
+        visualLayer = g;
+
+        g.selectAll("path")
+          .data(counties.features).join("path")
           .attr("d", path)
           .attr("fill", d => ISLANDS.has(d.properties.COUNTYNAME) ? "#f3f4f6" : "#eef3eb")
           .attr("stroke", d => ISLANDS.has(d.properties.COUNTYNAME) ? "#e5e7eb" : "#d1d5db")
           .attr("stroke-width", 0.5)
+          .style("pointer-events", "none");
+
+        hit.selectAll("path")
+          .data(counties.features).join("path")
+          .attr("d", path)
+          .attr("fill", "rgba(0,0,0,0.001)")
+          .attr("stroke", "none")
           .style("cursor", d => ISLANDS.has(d.properties.COUNTYNAME) ? "default" : "pointer")
           .on("mouseenter", function(_, d) {
             if (ISLANDS.has(d.properties.COUNTYNAME)) return;
-            d3.select(this).raise();
             const display = COUNTY_NORMALIZE[d.properties.COUNTYNAME];
             if (display !== selectedCounty)
-              d3.select(this).attr("fill", "#9ab88a");
+              g.selectAll("path").filter(p => p === d).attr("fill", "#9ab88a");
           })
           .on("mouseleave", function(_, d) {
             if (ISLANDS.has(d.properties.COUNTYNAME)) return;
             const display = COUNTY_NORMALIZE[d.properties.COUNTYNAME];
             if (display !== selectedCounty)
-              d3.select(this).attr("fill", "#eef3eb");
+              g.selectAll("path").filter(p => p === d).attr("fill", "#eef3eb");
           })
           .on("click", function(_, d) {
             if (ISLANDS.has(d.properties.COUNTYNAME)) return;
             const display = COUNTY_NORMALIZE[d.properties.COUNTYNAME];
             if (!display) return;
-            svg.selectAll("path")
-              .attr("fill", p => ISLANDS.has(p.properties.COUNTYNAME) ? "#f3f4f6" : "#eef3eb");
-            d3.select(this).attr("fill", "#5a7c50");
+            g.selectAll("path").attr("fill", p => ISLANDS.has(p.properties.COUNTYNAME) ? "#f3f4f6" : "#eef3eb");
+            g.selectAll("path").filter(p => p === d).attr("fill", "#5a7c50");
             selectedCounty = display;
             loadCounty(display);
           });
@@ -162,9 +171,10 @@
     activeTab.classList.add('text-[#5a7c50]', 'border-b-[#5a7c50]');
     if (mode !== 'map') {
       selectedCounty = null;
-      d3.select("#taiwan-map").selectAll("path")
-        .filter(d => !ISLANDS.has(d.properties.COUNTYNAME))
-        .attr("fill", "#eef3eb");
+      if (visualLayer)
+        visualLayer.selectAll("path")
+          .filter(d => !ISLANDS.has(d.properties.COUNTYNAME))
+          .attr("fill", "#eef3eb");
     }
   }
 

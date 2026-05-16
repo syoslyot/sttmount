@@ -58,7 +58,7 @@
   {# 人員名單 #}
   {% if members %}
   <details class="bg-white border border-gray-100 rounded-xl overflow-hidden shadow-sm group">
-    <summary class="flex items-center justify-between px-4 py-3 cursor-pointer select-none text-[15px] text-gray-700 hover:bg-gray-50">
+    <summary class="flex items-center justify-between px-4 py-3 cursor-pointer select-none text-[17px] text-gray-700 hover:bg-gray-50">
       <span class="font-medium">人員名單</span>
       <svg class="w-4 h-4 text-gray-400 transition-transform group-open:rotate-180" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" d="m19 9-7 7-7-7"/>
@@ -77,10 +77,10 @@
         <tbody>
           {% for m in members %}
           <tr class="border-b border-gray-100 last:border-0">
-            <td class="px-4 py-2 text-[15px] text-gray-800">{{ m.name }}</td>
-            <td class="px-4 py-2 text-[15px] text-gray-600">{{ m.role or '—' }}</td>
-            <td class="px-4 py-2 text-[15px] text-gray-600">{{ m.department or '—' }}</td>
-            <td class="px-4 py-2 text-[15px] text-gray-600">{{ m.experience or '—' }}</td>
+            <td class="px-4 py-2 text-[17px] text-gray-800">{{ m.name }}</td>
+            <td class="px-4 py-2 text-[17px] text-gray-600">{{ m.role or '—' }}</td>
+            <td class="px-4 py-2 text-[17px] text-gray-600">{{ m.department or '—' }}</td>
+            <td class="px-4 py-2 text-[17px] text-gray-600">{{ m.experience or '—' }}</td>
           </tr>
           {% endfor %}
         </tbody>
@@ -94,14 +94,14 @@
   <div class="space-y-2">
     {% for r in records %}
     <details class="bg-white border border-gray-100 rounded-xl overflow-hidden shadow-sm group" open>
-      <summary class="flex items-center justify-between px-4 py-3 cursor-pointer select-none text-[15px] text-gray-700 hover:bg-gray-50">
+      <summary class="flex items-center justify-between px-4 py-3 cursor-pointer select-none text-[17px] text-gray-700 hover:bg-gray-50">
         <span class="font-medium">{{ r.filename }}</span>
         <svg class="w-4 h-4 text-gray-400 transition-transform group-open:rotate-180" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" d="m19 9-7 7-7-7"/>
         </svg>
       </summary>
       <div class="border-t border-gray-100 px-4 py-3">
-        <pre class="whitespace-pre-wrap text-[15px] text-gray-700 font-mono leading-relaxed">{{ r.content }}</pre>
+        <pre class="whitespace-pre-wrap text-[17px] text-gray-700 font-mono leading-relaxed">{{ r.content }}</pre>
       </div>
     </details>
     {% endfor %}
