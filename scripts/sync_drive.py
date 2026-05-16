@@ -37,7 +37,9 @@ REC_SUBFOLDER_NAMES = {"紀錄資料夾", "紀錄", "record", "records"}
 PDF_EXTS            = {".pdf"}
 GPX_EXTS            = {".gpx", ".kml"}
 RECORD_EXTS         = {".txt", ".md"}
+DOCX_EXTS           = {".docx"}
 EXCEL_EXTS          = {".xlsx", ".xls"}
+GDOC_MIME           = "application/vnd.google-apps.document"
 
 
 def build_service():
@@ -78,6 +80,19 @@ def download_file(service, file_id: str, dest: Path):
     print(f"  downloaded: {dest}")
 
 
+def download_google_doc(service, file_id: str, dest: Path):
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    if dest.exists():
+        return
+    request = service.files().export_media(fileId=file_id, mimeType="text/plain")
+    with io.FileIO(dest, "wb") as fh:
+        downloader = MediaIoBaseDownload(fh, request)
+        done = False
+        while not done:
+            _, done = downloader.next_chunk()
+    print(f"  downloaded (gdoc→txt): {dest}")
+
+
 def sync_expedition(service, exp_folder_id: str, exp_name: str):
     XLSX_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -113,12 +128,16 @@ def sync_map_folder(service, folder_id: str, exp_name: str):
 def sync_record_folder(service, folder_id: str, exp_name: str):
     rec_dir = TXT_DIR / exp_name
     rec_dir.mkdir(parents=True, exist_ok=True)
-    items = list_folder(service, folder_id)
-    for item in items:
+    for item in list_folder(service, folder_id):
         name = item["name"]
         fid  = item["id"]
+        mime = item["mimeType"]
         ext  = Path(name).suffix.lower()
-        if ext in RECORD_EXTS:
+        if mime == GDOC_MIME:
+            download_google_doc(service, fid, rec_dir / f"{name}.txt")
+        elif ext in DOCX_EXTS:
+            download_file(service, fid, rec_dir / name)
+        elif ext in RECORD_EXTS:
             download_file(service, fid, rec_dir / name)
 
 
