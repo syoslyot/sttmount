@@ -171,7 +171,7 @@
   }).addTo(map);
 
   {% for f in gpx_files %}
-  {% if '.kml' in f.filename %}
+  {% if '.kml' in f.file_path %}
   (function() {
     const layer = omnivore.kml("/static/gpx/{{ f.file_path }}");
     layer.on("ready", function() { map.fitBounds(layer.getBounds()); });

@@ -34,7 +34,6 @@ CREATE TABLE IF NOT EXISTS members (
 CREATE TABLE IF NOT EXISTS gpx_files (
     id            INTEGER PRIMARY KEY AUTOINCREMENT,
     expedition_id INTEGER NOT NULL REFERENCES expeditions(id) ON DELETE CASCADE,
-    filename      TEXT NOT NULL,
     file_path     TEXT NOT NULL UNIQUE
 );
 
