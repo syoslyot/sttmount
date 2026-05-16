@@ -127,20 +127,28 @@
           .attr("stroke-width", 0.5)
           .style("pointer-events", "none");
 
+        const hitCanvas = document.createElement("canvas");
+        hitCanvas.width  = w;
+        hitCanvas.height = h;
+        const hitCtx = hitCanvas.getContext("2d");
+        const pathCanvas = d3.geoPath().projection(proj).context(hitCtx);
+
         let hoveredFeature = null;
 
-        function findCounty(event) {
-          const [mx, my] = d3.pointer(event, svgEl);
-          const point = proj.invert([mx, my]);
-          return counties.features.find(f =>
-            !ISLANDS.has(f.properties.COUNTYNAME) && d3.geoContains(f, point)
-          ) || null;
+        function findCounty(mx, my) {
+          return counties.features.find(f => {
+            if (ISLANDS.has(f.properties.COUNTYNAME)) return false;
+            hitCtx.beginPath();
+            pathCanvas(f);
+            return hitCtx.isPointInPath(mx, my);
+          }) || null;
         }
 
         svg
           .style("cursor", "default")
           .on("mousemove", function(event) {
-            const found = findCounty(event);
+            const [mx, my] = d3.pointer(event, svgEl);
+            const found = findCounty(mx, my);
             if (found === hoveredFeature) return;
             if (hoveredFeature) {
               const prev = COUNTY_NORMALIZE[hoveredFeature.properties.COUNTYNAME];
@@ -167,7 +175,8 @@
             svg.style("cursor", "default");
           })
           .on("click", function(event) {
-            const found = findCounty(event);
+            const [mx, my] = d3.pointer(event, svgEl);
+            const found = findCounty(mx, my);
             if (!found) return;
             const display = COUNTY_NORMALIZE[found.properties.COUNTYNAME];
             if (!display) return;
