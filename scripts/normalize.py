@@ -160,8 +160,8 @@ def scan_static_files(xlsx_path: Path, exp_id: int, conn: sqlite3.Connection):
     map_pdf = STATIC_MAPS / f"{folder_name}.pdf"
     if map_pdf.exists():
         conn.execute(
-            "INSERT OR IGNORE INTO map_files(expedition_id, filename, file_path, file_type) VALUES (?, ?, ?, ?)",
-            (exp_id, map_pdf.name, map_pdf.name, "pdf"),
+            "INSERT OR IGNORE INTO map_files(expedition_id, file_path) VALUES (?, ?)",
+            (exp_id, map_pdf.name),
         )
 
     rec_dir = exp_folder / "records"
