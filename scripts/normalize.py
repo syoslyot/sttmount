@@ -150,19 +150,27 @@ def scan_static_files(xlsx_path: Path, exp_id: int, conn: sqlite3.Connection):
 
     folder_name = exp_folder.name
 
-    gpx_file = GPX_DIR / f"{folder_name}.gpx"
-    if gpx_file.exists():
-        conn.execute(
-            "INSERT OR IGNORE INTO gpx_files(expedition_id, filename, file_path) VALUES (?, ?, ?)",
-            (exp_id, gpx_file.name, gpx_file.name),
-        )
+    for ext in ('.gpx', '.GPX', '.kml', '.KML'):
+        src = GPX_DIR / f"{folder_name}{ext}"
+        if src.exists():
+            dest = GPX_DIR / f"{exp_id}{ext.lower()}"
+            src.rename(dest)
+            conn.execute(
+                "INSERT OR IGNORE INTO gpx_files(expedition_id, file_path) VALUES (?, ?)",
+                (exp_id, dest.name),
+            )
+            break
 
-    map_pdf = STATIC_MAPS / f"{folder_name}.pdf"
-    if map_pdf.exists():
-        conn.execute(
-            "INSERT OR IGNORE INTO map_files(expedition_id, file_path) VALUES (?, ?)",
-            (exp_id, map_pdf.name),
-        )
+    for ext in ('.pdf', '.PDF'):
+        src = STATIC_MAPS / f"{folder_name}{ext}"
+        if src.exists():
+            dest = STATIC_MAPS / f"{exp_id}{ext.lower()}"
+            src.rename(dest)
+            conn.execute(
+                "INSERT OR IGNORE INTO map_files(expedition_id, file_path) VALUES (?, ?)",
+                (exp_id, dest.name),
+            )
+            break
 
     rec_dir = exp_folder / "records"
     if rec_dir.is_dir():
