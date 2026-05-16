@@ -1,15 +1,15 @@
 {% if items %}
   {% for exp in items %}
   <a href="/expedition/{{ exp.id }}"
-     class="flex flex-col bg-white border border-gray-200 rounded-lg px-4 py-2.5
-            hover:border-green-500 hover:bg-green-50 transition group block">
+     class="flex flex-col bg-white border border-gray-100 rounded-xl px-6 py-5 shadow-sm
+            hover:border-[#5a7c50] hover:bg-[#eef3eb] transition group block">
     <div class="flex items-baseline justify-between gap-2">
-      <span class="font-medium text-gray-800 text-sm group-hover:text-green-800 truncate">{{ exp.name }}</span>
+      <span class="font-bold text-gray-700 text-[18px] group-hover:text-[#4a6741] truncate">{{ exp.name }}</span>
       {% if exp.leader_name %}
-      <span class="text-xs text-gray-400 shrink-0">{{ exp.leader_name }}</span>
+      <span class="text-[15px] text-gray-600 shrink-0 tracking-wide">{{ exp.leader_name }}</span>
       {% endif %}
     </div>
-    <span class="text-xs text-gray-400 mt-0.5">
+    <span class="text-[15px] text-gray-600 mt-1 tracking-wide">
       {{ exp.date_start }}{% if exp.date_end %} ～ {{ exp.date_end }}{% endif %}
       {% if exp.counties_display %}　{{ exp.counties_display }}{% endif %}
     </span>
@@ -17,5 +17,5 @@
   {% endfor %}
   {% if has_more %}<div class="sentinel h-1"></div>{% endif %}
 {% else %}
-  <p class="text-gray-400 text-sm">查無出隊紀錄。</p>
+  <p class="text-center text-gray-600 text-base py-8">查無出隊紀錄</p>
 {% endif %}
