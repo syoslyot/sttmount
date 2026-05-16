@@ -72,7 +72,7 @@ def fragment_recent(request: Request, offset: int = Query(0)):
             SELECT e.*, GROUP_CONCAT(DISTINCT ec.county) as all_counties, {_LEADER_SUB}
             FROM expeditions e
             LEFT JOIN expedition_counties ec ON e.id = ec.expedition_id
-            GROUP BY e.id ORDER BY e.created_at DESC LIMIT {PAGE+1} OFFSET {offset}
+            GROUP BY e.id ORDER BY COALESCE(e.date_end, e.date_start) DESC LIMIT {PAGE+1} OFFSET {offset}
         """).fetchall()
     has_more = len(rows) > PAGE
     return templates.TemplateResponse("_results.html", {
@@ -89,7 +89,7 @@ def fragment_county(request: Request, name: str, offset: int = Query(0)):
             JOIN expedition_counties ec_filter ON e.id = ec_filter.expedition_id
             LEFT JOIN expedition_counties ec_all ON e.id = ec_all.expedition_id
             WHERE ec_filter.county = ?
-            GROUP BY e.id ORDER BY e.date_start DESC LIMIT {PAGE+1} OFFSET {offset}
+            GROUP BY e.id ORDER BY COALESCE(e.date_end, e.date_start) DESC LIMIT {PAGE+1} OFFSET {offset}
         """, (name,)).fetchall()
     has_more = len(rows) > PAGE
     return templates.TemplateResponse("_results.html", {
@@ -106,7 +106,7 @@ def fragment_date(request: Request, date_from: str | None = Query(None), date_to
                 FROM expeditions e
                 LEFT JOIN expedition_counties ec ON e.id = ec.expedition_id
                 WHERE e.date_start BETWEEN ? AND ?
-                GROUP BY e.id ORDER BY e.date_start DESC LIMIT {PAGE+1} OFFSET {offset}
+                GROUP BY e.id ORDER BY COALESCE(e.date_end, e.date_start) DESC LIMIT {PAGE+1} OFFSET {offset}
             """, (date_from, date_to)).fetchall()
         elif date_from:
             rows = conn.execute(f"""
@@ -114,7 +114,7 @@ def fragment_date(request: Request, date_from: str | None = Query(None), date_to
                 FROM expeditions e
                 LEFT JOIN expedition_counties ec ON e.id = ec.expedition_id
                 WHERE e.date_start >= ?
-                GROUP BY e.id ORDER BY e.date_start DESC LIMIT {PAGE+1} OFFSET {offset}
+                GROUP BY e.id ORDER BY COALESCE(e.date_end, e.date_start) DESC LIMIT {PAGE+1} OFFSET {offset}
             """, (date_from,)).fetchall()
         elif date_to:
             rows = conn.execute(f"""
@@ -122,7 +122,7 @@ def fragment_date(request: Request, date_from: str | None = Query(None), date_to
                 FROM expeditions e
                 LEFT JOIN expedition_counties ec ON e.id = ec.expedition_id
                 WHERE e.date_start <= ?
-                GROUP BY e.id ORDER BY e.date_start DESC LIMIT {PAGE+1} OFFSET {offset}
+                GROUP BY e.id ORDER BY COALESCE(e.date_end, e.date_start) DESC LIMIT {PAGE+1} OFFSET {offset}
             """, (date_to,)).fetchall()
         else:
             rows = []
@@ -143,7 +143,7 @@ def fragment_search(request: Request, q: str = Query(""), offset: int = Query(0)
                 FROM expeditions e
                 LEFT JOIN expedition_counties ec ON e.id = ec.expedition_id
                 WHERE e.name LIKE ? OR e.region LIKE ? OR e.county LIKE ? OR e.description LIKE ?
-                GROUP BY e.id ORDER BY e.date_start DESC LIMIT {PAGE+1} OFFSET {offset}
+                GROUP BY e.id ORDER BY COALESCE(e.date_end, e.date_start) DESC LIMIT {PAGE+1} OFFSET {offset}
             """, (pattern, pattern, pattern, pattern)).fetchall()
     has_more = len(rows) > PAGE
     return templates.TemplateResponse("_results.html", {
