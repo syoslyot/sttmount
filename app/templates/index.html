@@ -90,16 +90,7 @@
       <input id="search-q" type="text" placeholder="隊伍名稱、地點、關鍵字…"
              class="flex-1 border border-gray-200 rounded-lg px-4 py-2.5 text-sm
                     focus:outline-none focus:border-green-500"
-             onkeydown="if(event.key==='Enter') loadSearch()"
-             oninput="if(!this.value.trim()) updateResults('/fragment/recent')">
-      <button onclick="loadSearch()"
-              class="shrink-0 bg-green-700 text-white rounded-lg px-3 py-2.5
-                     hover:bg-green-800 transition">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round"
-            d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 15.803 7.5 7.5 0 0 0 16.803 15.803z"/>
-        </svg>
-      </button>
+             oninput="clearTimeout(searchTimer); searchTimer = setTimeout(loadSearch, 300)">
     </div>
   </div>
 
@@ -115,6 +106,7 @@
   let pageBaseUrl = '';
   let pageOffset  = 0;
   let pageLoading = false;
+  let searchTimer = null;
 
   function setMode(mode) {
     ['map','date','search'].forEach(m => {
@@ -196,7 +188,7 @@
 
   function loadSearch() {
     const q = document.getElementById('search-q').value.trim();
-    if (!q) return;
+    if (!q) { updateResults('/fragment/recent'); return; }
     updateResults('/fragment/search?q=' + encodeURIComponent(q));
   }
 
