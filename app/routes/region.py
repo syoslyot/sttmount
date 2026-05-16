@@ -72,7 +72,7 @@ def fragment_recent(request: Request, offset: int = Query(0)):
             SELECT e.*, GROUP_CONCAT(DISTINCT ec.county) as all_counties, {_LEADER_SUB}
             FROM expeditions e
             LEFT JOIN expedition_counties ec ON e.id = ec.expedition_id
-            GROUP BY e.id ORDER BY COALESCE(e.date_end, e.date_start) DESC LIMIT {PAGE+1} OFFSET {offset}
+            GROUP BY e.id ORDER BY e.created_at DESC LIMIT {PAGE+1} OFFSET {offset}
         """).fetchall()
     has_more = len(rows) > PAGE
     return templates.TemplateResponse("_results.html", {
