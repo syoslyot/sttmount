@@ -15,7 +15,7 @@ from pathlib import Path
 import fitz
 import openpyxl
 from openpyxl.worksheet.properties import PageSetupProperties
-from PIL import Image
+from PIL import Image, ImageOps
 
 DB_PATH = Path(__file__).parent.parent / "db" / "sttmount.db"
 STATIC_MAPS = Path(__file__).parent.parent / "app" / "static" / "maps"
@@ -102,19 +102,38 @@ def capture_sheet_range(xlsx_path: Path, sheet_name: str, cell_range: str, outpu
         pix.save(str(output_path))
 
 
-def merge_images_vertical(paths: list[Path], output_path: Path):
-    imgs = [Image.open(p) for p in paths if p.exists()]
+def trim_whitespace(img: Image.Image, padding: int = 15) -> Image.Image:
+    gray = img.convert("L")
+    bbox = ImageOps.invert(gray).getbbox()
+    if not bbox:
+        return img
+    l, t, r, b = bbox
+    return img.crop((max(0, l - padding), max(0, t - padding),
+                     min(img.width, r + padding), min(img.height, b + padding)))
+
+
+def build_a4_preview(paths: list[Path], output_path: Path):
+    A4_W, A4_H, GAP = 1240, 1754, 16
+    imgs = [trim_whitespace(Image.open(p)) for p in paths if p.exists()]
     if not imgs:
         return
-    w = max(img.width for img in imgs)
-    resized = [img.resize((w, round(img.height * w / img.width)), Image.LANCZOS)
+    target_w = A4_W
+    resized = [img.resize((target_w, round(img.height * target_w / img.width)), Image.LANCZOS)
                for img in imgs]
-    combined = Image.new("RGB", (w, sum(img.height for img in resized)), "white")
+    total_h = sum(img.height for img in resized) + GAP * (len(resized) - 1)
+    if total_h > A4_H:
+        scale = A4_H / total_h
+        target_w = round(A4_W * scale)
+        resized = [img.resize((target_w, round(img.height * target_w / img.width)), Image.LANCZOS)
+                   for img in imgs]
+        total_h = sum(img.height for img in resized) + GAP * (len(resized) - 1)
+    canvas = Image.new("RGB", (max(img.width for img in resized), total_h), "white")
     y = 0
     for img in resized:
-        combined.paste(img, (0, y))
-        y += img.height
-    combined.save(str(output_path))
+        canvas.paste(img, (0, y))
+        y += img.height + GAP
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    canvas.save(str(output_path))
 
 
 def parse_p1(ws):
@@ -248,7 +267,7 @@ def normalize(xlsx_path: Path):
     else:
         print("跳過")
 
-    merge_images_vertical([p1_path, p2_path], preview_path)
+    build_a4_preview([p1_path, p2_path], preview_path)
     p1_path.unlink(missing_ok=True)
     p2_path.unlink(missing_ok=True)
 
