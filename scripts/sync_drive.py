@@ -27,7 +27,8 @@ from googleapiclient.http import MediaIoBaseDownload
 
 SCOPES = ["https://www.googleapis.com/auth/drive.readonly"]
 
-RAW_DIR  = Path(__file__).parent.parent / "data" / "raw"
+XLSX_DIR = Path(__file__).parent.parent / "data" / "raw" / "xlsx"
+TXT_DIR  = Path(__file__).parent.parent / "data" / "raw" / "txt"
 GPX_DIR  = Path(__file__).parent.parent / "app" / "static" / "gpx"
 MAPS_DIR = Path(__file__).parent.parent / "app" / "static" / "maps"
 
@@ -78,8 +79,7 @@ def download_file(service, file_id: str, dest: Path):
 
 
 def sync_expedition(service, exp_folder_id: str, exp_name: str):
-    exp_raw = RAW_DIR / exp_name
-    exp_raw.mkdir(parents=True, exist_ok=True)
+    XLSX_DIR.mkdir(parents=True, exist_ok=True)
 
     items = list_folder(service, exp_folder_id)
     for item in items:
@@ -95,7 +95,7 @@ def sync_expedition(service, exp_folder_id: str, exp_name: str):
             elif name_low in {n.lower() for n in REC_SUBFOLDER_NAMES}:
                 sync_record_folder(service, fid, exp_name)
         elif ext in EXCEL_EXTS:
-            download_file(service, fid, exp_raw / name)
+            download_file(service, fid, XLSX_DIR / name)
 
 
 def sync_map_folder(service, folder_id: str, exp_name: str):
@@ -111,7 +111,7 @@ def sync_map_folder(service, folder_id: str, exp_name: str):
 
 
 def sync_record_folder(service, folder_id: str, exp_name: str):
-    rec_dir = RAW_DIR / exp_name / "records"
+    rec_dir = TXT_DIR / exp_name
     rec_dir.mkdir(parents=True, exist_ok=True)
     items = list_folder(service, folder_id)
     for item in items:
