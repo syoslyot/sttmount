@@ -90,7 +90,8 @@
       <input id="search-q" type="text" placeholder="隊伍名稱、地點、關鍵字…"
              class="flex-1 border border-gray-200 rounded-lg px-4 py-2.5 text-sm
                     focus:outline-none focus:border-green-500"
-             onkeydown="if(event.key==='Enter') loadSearch()">
+             onkeydown="if(event.key==='Enter') loadSearch()"
+             oninput="if(!this.value.trim()) updateResults('/fragment/recent')">
       <button onclick="loadSearch()"
               class="shrink-0 bg-green-700 text-white rounded-lg px-3 py-2.5
                      hover:bg-green-800 transition">
