@@ -10,7 +10,7 @@
   {# Tab 列 #}
   <div class="flex shrink-0">
     <button id="tab-map" onclick="setMode('map')"
-      class="flex-1 py-3 flex items-center justify-center gap-2 text-sm font-medium transition border-b-2 border-transparent">
+      class="flex-1 py-3 flex items-center justify-center gap-2 text-sm font-medium transition">
       <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round"
           d="M9 6.75V15m6-6v8.25m.503 3.498 4.875-2.437c.381-.19.622-.58.622-1.006V4.82c0-.836-.88-1.38-1.628-1.006l-3.869 1.934c-.317.159-.69.159-1.006 0L9.503 3.252a1.125 1.125 0 0 0-1.006 0L3.622 5.689C3.24 5.88 3 6.27 3 6.695V19.18c0 .836.88 1.38 1.628 1.006l3.869-1.934c.317-.159.69-.159 1.006 0l4.994 2.497c.317.158.69.158 1.006 0z"/>
@@ -18,7 +18,7 @@
       地區
     </button>
     <button id="tab-date" onclick="setMode('date')"
-      class="flex-1 py-3 flex items-center justify-center gap-2 text-sm font-medium transition border-b-2 border-transparent">
+      class="flex-1 py-3 flex items-center justify-center gap-2 text-sm font-medium transition">
       <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round"
           d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5"/>
@@ -26,7 +26,7 @@
       日期
     </button>
     <button id="tab-search" onclick="setMode('search')"
-      class="flex-1 py-3 flex items-center justify-center gap-2 text-sm font-medium transition border-b-2 border-transparent">
+      class="flex-1 py-3 flex items-center justify-center gap-2 text-sm font-medium transition">
       <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round"
           d="M21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 15.803 7.5 7.5 0 0 0 16.803 15.803z"/>
@@ -119,13 +119,13 @@
     ['map','date','search'].forEach(m => {
       document.getElementById('mode-' + m).classList.add('hidden');
       const tab = document.getElementById('tab-' + m);
-      tab.classList.remove('border-green-600', 'text-green-800');
-      tab.classList.add('border-transparent', 'text-gray-500');
+      tab.classList.remove('text-green-800');
+      tab.classList.add('text-gray-500');
     });
     document.getElementById('mode-' + mode).classList.remove('hidden');
     const activeTab = document.getElementById('tab-' + mode);
-    activeTab.classList.remove('border-transparent', 'text-gray-500');
-    activeTab.classList.add('border-green-600', 'text-green-800');
+    activeTab.classList.remove('text-gray-500');
+    activeTab.classList.add('text-green-800');
     if (mode !== 'map') {
       document.querySelectorAll('.county-btn').forEach(b => b.classList.remove('bg-green-100','border-green-600','text-green-800'));
     }
