@@ -52,6 +52,14 @@ CREATE TABLE IF NOT EXISTS records (
     filename      TEXT NOT NULL,
     content       TEXT NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS expedition_counties (
+    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+    expedition_id INTEGER NOT NULL REFERENCES expeditions(id) ON DELETE CASCADE,
+    county        TEXT NOT NULL,
+    UNIQUE(expedition_id, county)
+);
+CREATE INDEX IF NOT EXISTS idx_exp_counties ON expedition_counties(county);
 """
 
 def get_conn() -> sqlite3.Connection:
@@ -72,3 +80,11 @@ def init_db():
             conn.execute("ALTER TABLE expeditions ADD COLUMN preview_image TEXT")
         except sqlite3.OperationalError:
             pass
+        try:
+            conn.execute("ALTER TABLE expeditions ADD COLUMN region_exit TEXT")
+        except sqlite3.OperationalError:
+            pass
+        conn.execute("""
+            INSERT OR IGNORE INTO expedition_counties(expedition_id, county)
+            SELECT id, county FROM expeditions WHERE county IS NOT NULL
+        """)

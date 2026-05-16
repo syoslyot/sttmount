@@ -31,12 +31,12 @@ RAW_DIR  = Path(__file__).parent.parent / "data" / "raw"
 GPX_DIR  = Path(__file__).parent.parent / "app" / "static" / "gpx"
 MAPS_DIR = Path(__file__).parent.parent / "app" / "static" / "maps"
 
-MAP_SUBFOLDER_NAMES  = {"地圖資料夾", "地圖", "map", "maps"}
-REC_SUBFOLDER_NAMES  = {"紀錄資料夾", "紀錄", "record", "records"}
-MAP_FILE_EXTS        = {".pdf", ".jpg", ".jpeg", ".png", ".webp"}
-GPX_EXTS             = {".gpx", ".kml"}
-RECORD_EXTS          = {".txt", ".md"}
-EXCEL_EXTS           = {".xlsx", ".xls"}
+MAP_SUBFOLDER_NAMES = {"地圖資料夾", "地圖", "map", "maps"}
+REC_SUBFOLDER_NAMES = {"紀錄資料夾", "紀錄", "record", "records"}
+PDF_EXTS            = {".pdf"}
+GPX_EXTS            = {".gpx", ".kml"}
+RECORD_EXTS         = {".txt", ".md"}
+EXCEL_EXTS          = {".xlsx", ".xls"}
 
 
 def build_service():
@@ -105,9 +105,9 @@ def sync_map_folder(service, folder_id: str, exp_name: str):
         fid  = item["id"]
         ext  = Path(name).suffix.lower()
         if ext in GPX_EXTS:
-            download_file(service, fid, GPX_DIR / exp_name / name)
-        elif ext in MAP_FILE_EXTS:
-            download_file(service, fid, MAPS_DIR / exp_name / name)
+            download_file(service, fid, GPX_DIR / f"{exp_name}.gpx")
+        elif ext in PDF_EXTS:
+            download_file(service, fid, MAPS_DIR / f"{exp_name}.pdf")
 
 
 def sync_record_folder(service, folder_id: str, exp_name: str):

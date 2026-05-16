@@ -13,17 +13,13 @@
   {% set path = request.url.path %}
   <nav class="bg-green-800 text-white px-6 py-3 flex items-center justify-between shadow shrink-0">
     <a href="/" class="font-bold text-lg tracking-wide">成大山協</a>
+    {% block navbar_extra %}{% endblock %}
   </nav>
 
   <main class="flex-1 {% block main_class %}max-w-5xl w-full mx-auto px-4 py-8{% endblock %}">
     {% block content %}{% endblock %}
   </main>
 
-  {% if path != '/' %}
-  <footer class="text-center text-xs text-gray-400 py-4 shrink-0">
-    成大山協出隊紀錄系統
-  </footer>
-  {% endif %}
 
 </body>
 </html>

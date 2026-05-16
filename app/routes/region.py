@@ -7,6 +7,8 @@ from app.models import get_conn
 router = APIRouter()
 templates = Jinja2Templates(directory=Path(__file__).parent.parent / "templates")
 
+PAGE = 20
+
 # (display, db_counties, col, row)
 COUNTY_GRID = [
     ("基隆", ["基隆市"],                3, 1),
@@ -30,83 +32,123 @@ COUNTY_GRID = [
 
 COUNTY_MAP = {c[0]: c[1] for c in COUNTY_GRID}
 
+_LEADER_SUB = "(SELECT m.name FROM members m WHERE m.expedition_id = e.id AND m.role = '領隊' LIMIT 1) as leader_name"
 
-def _query_expeditions(counties: list[str], limit: int = 5) -> list:
-    placeholders = ",".join("?" * len(counties))
-    with get_conn() as conn:
-        return conn.execute(
-            f"SELECT * FROM expeditions WHERE county IN ({placeholders}) ORDER BY date_start DESC LIMIT {limit}",
-            counties
-        ).fetchall()
+
+def _enrich(rows) -> list[dict]:
+    result = []
+    for row in rows:
+        d = dict(row)
+        all_c       = [c for c in (d.get('all_counties') or '').split(',') if c]
+        entry       = d.get('county') or ''
+        region      = d.get('region') or ''
+        region_exit = d.get('region_exit') or ''
+        parts = []
+        if entry:
+            parts.append(f"{entry} · {region}" if region else entry)
+        for c in all_c:
+            if c != entry:
+                parts.append(f"{c} · {region_exit}" if region_exit else c)
+        d['counties_display'] = ' / '.join(parts)
+        result.append(d)
+    return result
 
 
 @router.get("/", response_class=HTMLResponse)
 def home(request: Request, mode: str = "map"):
-    with get_conn() as conn:
-        recent = conn.execute(
-            "SELECT * FROM expeditions ORDER BY date_start DESC LIMIT 5"
-        ).fetchall()
     return templates.TemplateResponse("index.html", {
         "request": request,
         "county_grid": COUNTY_GRID,
         "initial_mode": mode,
-        "recent": recent,
     })
 
 
 # ── Fragment endpoints ─────────────────────────────────────────────────────
 
 @router.get("/fragment/recent", response_class=HTMLResponse)
-def fragment_recent(request: Request):
+def fragment_recent(request: Request, offset: int = Query(0)):
     with get_conn() as conn:
-        items = conn.execute(
-            "SELECT * FROM expeditions ORDER BY date_start DESC LIMIT 5"
-        ).fetchall()
-    return templates.TemplateResponse("_results.html", {"request": request, "items": items, "title": "最近出隊"})
+        rows = conn.execute(f"""
+            SELECT e.*, GROUP_CONCAT(DISTINCT ec.county) as all_counties, {_LEADER_SUB}
+            FROM expeditions e
+            LEFT JOIN expedition_counties ec ON e.id = ec.expedition_id
+            GROUP BY e.id ORDER BY e.created_at DESC LIMIT {PAGE+1} OFFSET {offset}
+        """).fetchall()
+    has_more = len(rows) > PAGE
+    return templates.TemplateResponse("_results.html", {
+        "request": request, "items": _enrich(rows[:PAGE]), "has_more": has_more,
+    })
 
 
 @router.get("/fragment/county/{name}", response_class=HTMLResponse)
-def fragment_county(request: Request, name: str):
+def fragment_county(request: Request, name: str, offset: int = Query(0)):
     with get_conn() as conn:
-        items = conn.execute(
-            "SELECT * FROM expeditions WHERE county = ? ORDER BY date_start DESC LIMIT 5",
-            (name,)
-        ).fetchall()
+        rows = conn.execute(f"""
+            SELECT e.*, GROUP_CONCAT(DISTINCT ec_all.county) as all_counties, {_LEADER_SUB}
+            FROM expeditions e
+            JOIN expedition_counties ec_filter ON e.id = ec_filter.expedition_id
+            LEFT JOIN expedition_counties ec_all ON e.id = ec_all.expedition_id
+            WHERE ec_filter.county = ?
+            GROUP BY e.id ORDER BY e.date_start DESC LIMIT {PAGE+1} OFFSET {offset}
+        """, (name,)).fetchall()
+    has_more = len(rows) > PAGE
     return templates.TemplateResponse("_results.html", {
-        "request": request, "items": items, "title": name,
+        "request": request, "items": _enrich(rows[:PAGE]), "has_more": has_more,
     })
 
 
 @router.get("/fragment/date", response_class=HTMLResponse)
-def fragment_date(request: Request, year: int | None = Query(None), month: int | None = Query(None)):
+def fragment_date(request: Request, date_from: str | None = Query(None), date_to: str | None = Query(None), offset: int = Query(0)):
     with get_conn() as conn:
-        if year and month:
-            items = conn.execute(
-                "SELECT * FROM expeditions WHERE strftime('%Y', date_start)=? AND strftime('%m', date_start)=? ORDER BY date_start DESC LIMIT 5",
-                (str(year), f"{month:02d}")
-            ).fetchall()
-        elif year:
-            items = conn.execute(
-                "SELECT * FROM expeditions WHERE strftime('%Y', date_start)=? ORDER BY date_start DESC LIMIT 5",
-                (str(year),)
-            ).fetchall()
+        if date_from and date_to:
+            rows = conn.execute(f"""
+                SELECT e.*, GROUP_CONCAT(DISTINCT ec.county) as all_counties, {_LEADER_SUB}
+                FROM expeditions e
+                LEFT JOIN expedition_counties ec ON e.id = ec.expedition_id
+                WHERE e.date_start BETWEEN ? AND ?
+                GROUP BY e.id ORDER BY e.date_start DESC LIMIT {PAGE+1} OFFSET {offset}
+            """, (date_from, date_to)).fetchall()
+        elif date_from:
+            rows = conn.execute(f"""
+                SELECT e.*, GROUP_CONCAT(DISTINCT ec.county) as all_counties, {_LEADER_SUB}
+                FROM expeditions e
+                LEFT JOIN expedition_counties ec ON e.id = ec.expedition_id
+                WHERE e.date_start >= ?
+                GROUP BY e.id ORDER BY e.date_start DESC LIMIT {PAGE+1} OFFSET {offset}
+            """, (date_from,)).fetchall()
+        elif date_to:
+            rows = conn.execute(f"""
+                SELECT e.*, GROUP_CONCAT(DISTINCT ec.county) as all_counties, {_LEADER_SUB}
+                FROM expeditions e
+                LEFT JOIN expedition_counties ec ON e.id = ec.expedition_id
+                WHERE e.date_start <= ?
+                GROUP BY e.id ORDER BY e.date_start DESC LIMIT {PAGE+1} OFFSET {offset}
+            """, (date_to,)).fetchall()
         else:
-            items = []
-    title = f"{year}年{'%d月' % month if month else ''}" if year else ""
-    return templates.TemplateResponse("_results.html", {"request": request, "items": items, "title": title})
+            rows = []
+    has_more = len(rows) > PAGE
+    return templates.TemplateResponse("_results.html", {
+        "request": request, "items": _enrich(rows[:PAGE]), "has_more": has_more,
+    })
 
 
 @router.get("/fragment/search", response_class=HTMLResponse)
-def fragment_search(request: Request, q: str = Query("")):
-    items = []
+def fragment_search(request: Request, q: str = Query(""), offset: int = Query(0)):
+    rows = []
     if q:
         pattern = f"%{q}%"
         with get_conn() as conn:
-            items = conn.execute(
-                "SELECT * FROM expeditions WHERE name LIKE ? OR region LIKE ? OR county LIKE ? OR description LIKE ? ORDER BY date_start DESC LIMIT 5",
-                (pattern, pattern, pattern, pattern)
-            ).fetchall()
-    return templates.TemplateResponse("_results.html", {"request": request, "items": items, "title": f"「{q}」" if q else ""})
+            rows = conn.execute(f"""
+                SELECT e.*, GROUP_CONCAT(DISTINCT ec.county) as all_counties, {_LEADER_SUB}
+                FROM expeditions e
+                LEFT JOIN expedition_counties ec ON e.id = ec.expedition_id
+                WHERE e.name LIKE ? OR e.region LIKE ? OR e.county LIKE ? OR e.description LIKE ?
+                GROUP BY e.id ORDER BY e.date_start DESC LIMIT {PAGE+1} OFFSET {offset}
+            """, (pattern, pattern, pattern, pattern)).fetchall()
+    has_more = len(rows) > PAGE
+    return templates.TemplateResponse("_results.html", {
+        "request": request, "items": _enrich(rows[:PAGE]), "has_more": has_more,
+    })
 
 
 # ── Detail pages ───────────────────────────────────────────────────────────

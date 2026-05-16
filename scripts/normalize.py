@@ -17,8 +17,15 @@ import openpyxl
 from openpyxl.worksheet.properties import PageSetupProperties
 from PIL import Image, ImageOps
 
-DB_PATH = Path(__file__).parent.parent / "db" / "sttmount.db"
-STATIC_MAPS = Path(__file__).parent.parent / "app" / "static" / "maps"
+DB_PATH         = Path(__file__).parent.parent / "db" / "sttmount.db"
+STATIC_MAPS     = Path(__file__).parent.parent / "app" / "static" / "maps"
+STATIC_PREVIEWS = Path(__file__).parent.parent / "app" / "static" / "previews"
+RAW_DIR         = Path(__file__).parent.parent / "data" / "raw"
+GPX_DIR         = Path(__file__).parent.parent / "app" / "static" / "gpx"
+
+GPX_EXTS    = {".gpx", ".kml"}
+MAP_EXTS    = {".pdf"}
+RECORD_EXTS = {".txt", ".md"}
 
 COUNTY_NORMALIZE = {
     "臺北市": "台北", "台北市": "台北",
@@ -136,14 +143,56 @@ def build_a4_preview(paths: list[Path], output_path: Path):
     canvas.save(str(output_path))
 
 
+def scan_static_files(xlsx_path: Path, exp_id: int, conn: sqlite3.Connection):
+    exp_folder = xlsx_path.parent
+    if exp_folder == RAW_DIR:
+        return
+
+    folder_name = exp_folder.name
+
+    gpx_file = GPX_DIR / f"{folder_name}.gpx"
+    if gpx_file.exists():
+        conn.execute(
+            "INSERT OR IGNORE INTO gpx_files(expedition_id, filename, file_path) VALUES (?, ?, ?)",
+            (exp_id, gpx_file.name, gpx_file.name),
+        )
+
+    map_pdf = STATIC_MAPS / f"{folder_name}.pdf"
+    if map_pdf.exists():
+        conn.execute(
+            "INSERT OR IGNORE INTO map_files(expedition_id, filename, file_path, file_type) VALUES (?, ?, ?, ?)",
+            (exp_id, map_pdf.name, map_pdf.name, "pdf"),
+        )
+
+    rec_dir = exp_folder / "records"
+    if rec_dir.is_dir():
+        for f in sorted(rec_dir.iterdir()):
+            if f.suffix.lower() in RECORD_EXTS:
+                exists = conn.execute(
+                    "SELECT 1 FROM records WHERE expedition_id=? AND filename=?",
+                    (exp_id, f.name),
+                ).fetchone()
+                if not exists:
+                    content = f.read_text(encoding="utf-8", errors="replace")
+                    conn.execute(
+                        "INSERT INTO records(expedition_id, filename, content) VALUES (?, ?, ?)",
+                        (exp_id, f.name, content),
+                    )
+
+    conn.commit()
+    print(f"    靜態檔案已掃描：{folder_name}/")
+
+
 def parse_p1(ws):
     """從 直企P1(列印) 萃取出隊資訊。"""
     name = str(ws["D2"].value or "").strip() or None
     date_start = roc_to_iso(ws["C3"].value or "")
     date_end = roc_to_iso(ws["C4"].value or "")
     entry_loc = str(ws["F3"].value or "")
+    exit_loc  = str(ws["F4"].value or "")
     county, region = extract_county_region(entry_loc)
-    return name, date_start, date_end, county, region
+    county_exit, region_exit = extract_county_region(exit_loc)
+    return name, date_start, date_end, county, region, county_exit, region_exit
 
 
 def parse_p2(ws):
@@ -197,7 +246,7 @@ def normalize(xlsx_path: Path):
         return
 
     ws_p1 = wb["直企P1(列印)"]
-    name, date_start, date_end, county, region = parse_p1(ws_p1)
+    name, date_start, date_end, county, region, county_exit, region_exit = parse_p1(ws_p1)
 
     if not name:
         print(f"  ⚠ 無法取得出隊名稱，跳過 {xlsx_path.name}")
@@ -226,9 +275,9 @@ def normalize(xlsx_path: Path):
         return
 
     cur = conn.execute(
-        "INSERT INTO expeditions(name, date_start, date_end, county, region, description) "
-        "VALUES (?, ?, ?, ?, ?, ?)",
-        (name, date_start, date_end, county, region, description),
+        "INSERT INTO expeditions(name, date_start, date_end, county, region, region_exit, description) "
+        "VALUES (?, ?, ?, ?, ?, ?, ?)",
+        (name, date_start, date_end, county, region, region_exit, description),
     )
     conn.commit()
     exp_id = cur.lastrowid
@@ -239,7 +288,15 @@ def normalize(xlsx_path: Path):
             "VALUES (?, ?, ?, ?, ?)",
             (exp_id, mname, mrole, mdept, mexp),
         )
+
+    for c in {county, county_exit} - {None}:
+        conn.execute(
+            "INSERT OR IGNORE INTO expedition_counties(expedition_id, county) VALUES (?,?)",
+            (exp_id, c),
+        )
     conn.commit()
+
+    scan_static_files(xlsx_path, exp_id, conn)
     conn.close()
 
     print(f"  ✓ 已插入：{name}（id={exp_id}）")
@@ -248,31 +305,31 @@ def normalize(xlsx_path: Path):
     print(f"    隊員：{len(members)} 人")
 
     # 生成截圖並合併
-    out_dir = STATIC_MAPS / str(exp_id)
-    p1_path = out_dir / "p1.png"
-    p2_path = out_dir / "p2.png"
-    preview_path = out_dir / "preview.png"
+    STATIC_PREVIEWS.mkdir(parents=True, exist_ok=True)
+    preview_path = STATIC_PREVIEWS / f"{exp_id}.png"
+    with tempfile.TemporaryDirectory() as _tmp:
+        _tmp = Path(_tmp)
+        p1_path = _tmp / "p1.png"
+        p2_path = _tmp / "p2.png"
 
-    print(f"    截圖 P1...", end=" ", flush=True)
-    if "直企P1(列印)" in wb.sheetnames:
-        capture_sheet_range(xlsx_path, "直企P1(列印)", "A2:G27", p1_path)
-        print("完成" if p1_path.exists() else "失敗")
-    else:
-        print("跳過")
+        print(f"    截圖 P1...", end=" ", flush=True)
+        if "直企P1(列印)" in wb.sheetnames:
+            capture_sheet_range(xlsx_path, "直企P1(列印)", "A2:G27", p1_path)
+            print("完成" if p1_path.exists() else "失敗")
+        else:
+            print("跳過")
 
-    print(f"    截圖 P2...", end=" ", flush=True)
-    if "直企P2(列印)" in wb.sheetnames:
-        capture_sheet_range(xlsx_path, "直企P2(列印)", "B2:O11", p2_path)
-        print("完成" if p2_path.exists() else "失敗")
-    else:
-        print("跳過")
+        print(f"    截圖 P2...", end=" ", flush=True)
+        if "直企P2(列印)" in wb.sheetnames:
+            capture_sheet_range(xlsx_path, "直企P2(列印)", "B2:O11", p2_path)
+            print("完成" if p2_path.exists() else "失敗")
+        else:
+            print("跳過")
 
-    build_a4_preview([p1_path, p2_path], preview_path)
-    p1_path.unlink(missing_ok=True)
-    p2_path.unlink(missing_ok=True)
+        build_a4_preview([p1_path, p2_path], preview_path)
 
     if preview_path.exists():
-        rel = f"maps/{exp_id}/preview.png"
+        rel = f"previews/{exp_id}.png"
         conn = sqlite3.connect(DB_PATH)
         conn.execute("UPDATE expeditions SET preview_image=? WHERE id=?", (rel, exp_id))
         conn.commit()
@@ -286,7 +343,7 @@ def main():
         sys.exit(1)
 
     target = Path(sys.argv[1])
-    files = sorted(target.glob("*.xlsx")) if target.is_dir() else [target]
+    files = sorted(target.glob("**/*.xlsx")) if target.is_dir() else [target]
 
     for f in files:
         print(f"\n處理：{f.name}")
