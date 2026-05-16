@@ -2,8 +2,8 @@
 讀取出隊 Excel（all in one 直企格式），寫入 SQLite，並生成 P1/P2 截圖。
 資料來源：直企P1（出隊資訊）、直企P2（隊員名單、留守資料）。
 用法：
-  python3 scripts/normalize.py data/raw/xxx.xlsx
-  python3 scripts/normalize.py data/raw/          # 處理目錄下所有 xlsx
+  python3 scripts/normalize.py                    # 處理 data/raw/xlsx/ 下所有 xlsx
+  python3 scripts/normalize.py data/raw/xlsx/foo.xlsx
 """
 import re
 import sys
@@ -20,7 +20,8 @@ from PIL import Image, ImageOps
 DB_PATH         = Path(__file__).parent.parent / "db" / "sttmount.db"
 STATIC_MAPS     = Path(__file__).parent.parent / "app" / "static" / "maps"
 STATIC_PREVIEWS = Path(__file__).parent.parent / "app" / "static" / "previews"
-RAW_DIR         = Path(__file__).parent.parent / "data" / "raw"
+XLSX_DIR        = Path(__file__).parent.parent / "data" / "raw" / "xlsx"
+TXT_DIR         = Path(__file__).parent.parent / "data" / "raw" / "txt"
 GPX_DIR         = Path(__file__).parent.parent / "app" / "static" / "gpx"
 
 GPX_EXTS    = {".gpx", ".kml"}
@@ -143,15 +144,9 @@ def build_a4_preview(paths: list[Path], output_path: Path):
     canvas.save(str(output_path))
 
 
-def scan_static_files(xlsx_path: Path, exp_id: int, conn: sqlite3.Connection):
-    exp_folder = xlsx_path.parent
-    if exp_folder == RAW_DIR:
-        return
-
-    folder_name = exp_folder.name
-
+def scan_static_files(exp_name: str, exp_id: int, conn: sqlite3.Connection):
     for ext in ('.gpx', '.GPX', '.kml', '.KML'):
-        src = GPX_DIR / f"{folder_name}{ext}"
+        src = GPX_DIR / f"{exp_name}{ext}"
         if src.exists():
             dest = GPX_DIR / f"{exp_id}{ext.lower()}"
             src.rename(dest)
@@ -162,7 +157,7 @@ def scan_static_files(xlsx_path: Path, exp_id: int, conn: sqlite3.Connection):
             break
 
     for ext in ('.pdf', '.PDF'):
-        src = STATIC_MAPS / f"{folder_name}{ext}"
+        src = STATIC_MAPS / f"{exp_name}{ext}"
         if src.exists():
             dest = STATIC_MAPS / f"{exp_id}{ext.lower()}"
             src.rename(dest)
@@ -172,9 +167,12 @@ def scan_static_files(xlsx_path: Path, exp_id: int, conn: sqlite3.Connection):
             )
             break
 
-    rec_dir = exp_folder / "records"
-    if rec_dir.is_dir():
-        for f in sorted(rec_dir.iterdir()):
+    txt_src = TXT_DIR / exp_name
+    if txt_src.is_dir():
+        txt_dest = TXT_DIR / str(exp_id)
+        if txt_src != txt_dest:
+            txt_src.rename(txt_dest)
+        for f in sorted(txt_dest.iterdir()):
             if f.suffix.lower() in RECORD_EXTS:
                 exists = conn.execute(
                     "SELECT 1 FROM records WHERE expedition_id=? AND filename=?",
@@ -188,7 +186,7 @@ def scan_static_files(xlsx_path: Path, exp_id: int, conn: sqlite3.Connection):
                     )
 
     conn.commit()
-    print(f"    靜態檔案已掃描：{folder_name}/")
+    print(f"    靜態檔案已掃描：{exp_name}/")
 
 
 def parse_p1(ws):
@@ -278,7 +276,9 @@ def normalize(xlsx_path: Path):
     ).fetchone()
 
     if existing:
-        print(f"  → 已存在（id={existing[0]}）：{name}，跳過")
+        exp_id = existing[0]
+        print(f"  → 已存在（id={exp_id}）：{name}，補掃靜態檔案")
+        scan_static_files(xlsx_path.stem, exp_id, conn)
         conn.close()
         return
 
@@ -304,7 +304,12 @@ def normalize(xlsx_path: Path):
         )
     conn.commit()
 
-    scan_static_files(xlsx_path, exp_id, conn)
+    xlsx_stem = xlsx_path.stem
+    xlsx_final = xlsx_path.parent / f"{exp_id}.xlsx"
+    if xlsx_path != xlsx_final and not xlsx_final.exists():
+        xlsx_path.rename(xlsx_final)
+
+    scan_static_files(xlsx_stem, exp_id, conn)
     conn.close()
 
     print(f"  ✓ 已插入：{name}（id={exp_id}）")
@@ -322,14 +327,14 @@ def normalize(xlsx_path: Path):
 
         print(f"    截圖 P1...", end=" ", flush=True)
         if "直企P1(列印)" in wb.sheetnames:
-            capture_sheet_range(xlsx_path, "直企P1(列印)", "A2:G27", p1_path)
+            capture_sheet_range(xlsx_final, "直企P1(列印)", "A2:G27", p1_path)
             print("完成" if p1_path.exists() else "失敗")
         else:
             print("跳過")
 
         print(f"    截圖 P2...", end=" ", flush=True)
         if "直企P2(列印)" in wb.sheetnames:
-            capture_sheet_range(xlsx_path, "直企P2(列印)", "B2:O11", p2_path)
+            capture_sheet_range(xlsx_final, "直企P2(列印)", "B2:O11", p2_path)
             print("完成" if p2_path.exists() else "失敗")
         else:
             print("跳過")
@@ -346,11 +351,7 @@ def normalize(xlsx_path: Path):
 
 
 def main():
-    if len(sys.argv) < 2:
-        print("用法：python3 scripts/normalize.py <檔案.xlsx 或目錄>")
-        sys.exit(1)
-
-    target = Path(sys.argv[1])
+    target = Path(sys.argv[1]) if len(sys.argv) >= 2 else XLSX_DIR
     files = sorted(target.glob("**/*.xlsx")) if target.is_dir() else [target]
 
     for f in files:

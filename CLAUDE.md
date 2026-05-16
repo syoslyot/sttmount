@@ -27,12 +27,12 @@ NCKU 山社的出隊紀錄展示網站。無會員系統，純資料展示。
 ```
 所有出隊資料夾/
   {出隊名稱}/
-    *.xlsx                 ← 出隊資料（正規化後存入 SQLite）
+    *.xlsx                 → data/raw/xlsx/{出隊名}.xlsx（normalize 後改名為 {id}.xlsx）
     地圖資料夾/
-      *.gpx, *.kml         → app/static/gpx/{出隊名}/
-      *.pdf, *.jpg, *.png  → app/static/maps/{出隊名}/
+      *.gpx, *.kml         → app/static/gpx/{出隊名}.gpx（normalize 後改名為 {id}.gpx）
+      *.pdf                → app/static/maps/{出隊名}.pdf（normalize 後改名為 {id}.pdf）
     紀錄資料夾/
-      *.txt                → 讀入 DB records 資料表
+      *.txt                → data/raw/txt/{出隊名}/{filename}.txt（normalize 後資料夾改名為 {id}/，並批次 INSERT records）
 ```
 
 環境變數（GitHub Actions Secrets）：
@@ -71,7 +71,9 @@ sttmount/
 │   └── gen_gpx.py         # 產生假 GPX 軌跡檔（配合 seed.py）
 ├── db/
 │   └── sttmount.db        # SQLite（gitignore）
-├── data/raw/              # Drive 下載的暫存 Excel（gitignore）
+├── data/raw/
+│   ├── xlsx/              # Drive 下載的 xlsx（{出隊名}.xlsx → normalize 後改名為 {id}.xlsx）（gitignore）
+│   └── txt/               # Drive 下載的紀錄 txt（{出隊名}/ → normalize 後改名為 {id}/）（gitignore）
 ├── .github/workflows/
 │   ├── sync.yml           # 每日定時同步（待實作）
 │   └── deploy.yml         # push main 時 build & push image（待實作）
