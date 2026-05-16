@@ -26,7 +26,7 @@ GPX_DIR         = Path(__file__).parent.parent / "app" / "static" / "gpx"
 
 GPX_EXTS    = {".gpx", ".kml"}
 MAP_EXTS    = {".pdf"}
-RECORD_EXTS = {".txt", ".md"}
+RECORD_EXTS = {".txt", ".md", ".docx"}
 
 COUNTY_NORMALIZE = {
     "臺北市": "台北", "台北市": "台北",
@@ -179,7 +179,12 @@ def scan_static_files(exp_name: str, exp_id: int, conn: sqlite3.Connection):
                     (exp_id, f.name),
                 ).fetchone()
                 if not exists:
-                    content = f.read_text(encoding="utf-8", errors="replace")
+                    if f.suffix.lower() == ".docx":
+                        from docx import Document
+                        doc = Document(f)
+                        content = "\n".join(p.text for p in doc.paragraphs if p.text.strip())
+                    else:
+                        content = f.read_text(encoding="utf-8", errors="replace")
                     conn.execute(
                         "INSERT INTO records(expedition_id, filename, content) VALUES (?, ?, ?)",
                         (exp_id, f.name, content),
