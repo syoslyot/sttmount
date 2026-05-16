@@ -2,55 +2,35 @@
 {% block title %}成大山協{% endblock %}
 {% block main_class %}flex overflow-hidden{% endblock %}
 
+{% block head %}
+<script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/topojson-client@3/dist/topojson-client.js"></script>
+{% endblock %}
+
 {% block content %}
 
 {# ── 左半：模式切換 ── #}
-<div class="w-1/2 flex flex-col overflow-hidden" style="height: calc(100vh - 57px);">
+<div class="w-1/2 flex flex-col overflow-hidden border-r border-gray-100" style="height: calc(100vh - 65px);">
 
   {# Tab 列 #}
-  <div class="flex shrink-0">
+  <div class="flex shrink-0 border-b border-gray-100">
     <button id="tab-map" onclick="setMode('map')"
-      class="flex-1 py-3 flex items-center justify-center gap-2 text-sm font-medium transition">
-      <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round"
-          d="M9 6.75V15m6-6v8.25m.503 3.498 4.875-2.437c.381-.19.622-.58.622-1.006V4.82c0-.836-.88-1.38-1.628-1.006l-3.869 1.934c-.317.159-.69.159-1.006 0L9.503 3.252a1.125 1.125 0 0 0-1.006 0L3.622 5.689C3.24 5.88 3 6.27 3 6.695V19.18c0 .836.88 1.38 1.628 1.006l3.869-1.934c.317-.159.69-.159 1.006 0l4.994 2.497c.317.158.69.158 1.006 0z"/>
-      </svg>
+      class="tab-btn flex-1 py-3.5 flex items-center justify-center text-[16px] font-medium transition border-b-2 border-transparent">
       地區
     </button>
     <button id="tab-date" onclick="setMode('date')"
-      class="flex-1 py-3 flex items-center justify-center gap-2 text-sm font-medium transition">
-      <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round"
-          d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5"/>
-      </svg>
+      class="tab-btn flex-1 py-3.5 flex items-center justify-center text-[16px] font-medium transition border-b-2 border-transparent">
       日期
     </button>
     <button id="tab-search" onclick="setMode('search')"
-      class="flex-1 py-3 flex items-center justify-center gap-2 text-sm font-medium transition">
-      <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round"
-          d="M21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 15.803 7.5 7.5 0 0 0 16.803 15.803z"/>
-      </svg>
+      class="tab-btn flex-1 py-3.5 flex items-center justify-center text-[16px] font-medium transition border-b-2 border-transparent">
       關鍵字
     </button>
   </div>
 
-  {# 地圖模式：台灣縣市格 #}
-  <div id="mode-map" class="flex-1 overflow-y-auto p-5">
-    <div class="grid gap-1.5"
-         style="grid-template-columns: repeat(5, 1fr); grid-template-rows: repeat(10, 2.25rem);">
-      {% for display, counties, col, row in county_grid %}
-      <button
-        style="grid-column-start:{{ col }}; grid-row-start:{{ row }}"
-        onclick="loadCounty('{{ display }}', this)"
-        data-counties="{{ counties | join(',') }}"
-        class="county-btn rounded text-xs font-medium bg-white border border-gray-200
-               hover:bg-green-50 hover:border-green-500 hover:text-green-800 transition
-               flex items-center justify-center">
-        {{ display }}
-      </button>
-      {% endfor %}
-    </div>
+  {# 地圖模式：台灣縣市 SVG #}
+  <div id="mode-map" class="flex-1 min-h-0 flex items-center justify-center p-4">
+    <svg id="taiwan-map" class="w-full h-full" style="max-height:100%;"></svg>
   </div>
 
   {# 日期模式 #}
@@ -58,28 +38,28 @@
     <div class="flex flex-col gap-3">
       <div class="grid grid-cols-4 gap-1.5">
         <button onclick="loadPreset(1,'month')"
-                class="border border-gray-200 rounded-lg py-1.5 text-xs text-gray-600 hover:bg-green-50 hover:border-green-500 hover:text-green-800 transition">
+                class="border border-gray-200 rounded-lg py-1.5 text-xs text-gray-600 hover:bg-[#eef3eb] hover:border-[#5a7c50] hover:text-[#4a6741] transition">
           最近一個月
         </button>
         <button onclick="loadPreset(6,'month')"
-                class="border border-gray-200 rounded-lg py-1.5 text-xs text-gray-600 hover:bg-green-50 hover:border-green-500 hover:text-green-800 transition">
+                class="border border-gray-200 rounded-lg py-1.5 text-xs text-gray-600 hover:bg-[#eef3eb] hover:border-[#5a7c50] hover:text-[#4a6741] transition">
           最近半年
         </button>
         <button onclick="loadPreset(1,'year')"
-                class="border border-gray-200 rounded-lg py-1.5 text-xs text-gray-600 hover:bg-green-50 hover:border-green-500 hover:text-green-800 transition">
+                class="border border-gray-200 rounded-lg py-1.5 text-xs text-gray-600 hover:bg-[#eef3eb] hover:border-[#5a7c50] hover:text-[#4a6741] transition">
           最近一年
         </button>
         <button onclick="loadPreset(3,'year')"
-                class="border border-gray-200 rounded-lg py-1.5 text-xs text-gray-600 hover:bg-green-50 hover:border-green-500 hover:text-green-800 transition">
+                class="border border-gray-200 rounded-lg py-1.5 text-xs text-gray-600 hover:bg-[#eef3eb] hover:border-[#5a7c50] hover:text-[#4a6741] transition">
           最近三年
         </button>
       </div>
       <div class="flex items-center gap-2">
         <input id="date-from" type="date" onchange="loadDate()"
-               class="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-green-500">
+               class="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#5a7c50]">
         <span class="text-gray-400 text-sm shrink-0">～</span>
         <input id="date-to" type="date" onchange="loadDate()"
-               class="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-green-500">
+               class="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#5a7c50]">
       </div>
     </div>
   </div>
@@ -89,7 +69,7 @@
     <div class="flex w-4/5 max-w-xs gap-2">
       <input id="search-q" type="text" placeholder="隊伍名稱、地點、關鍵字…"
              class="flex-1 border border-gray-200 rounded-lg px-4 py-2.5 text-sm
-                    focus:outline-none focus:border-green-500"
+                    focus:outline-none focus:border-[#5a7c50]"
              oninput="clearTimeout(searchTimer); searchTimer = setTimeout(loadSearch, 300)">
     </div>
   </div>
@@ -97,7 +77,7 @@
 </div>
 
 {# ── 右半：結果 ── #}
-<div id="results" class="w-1/2 overflow-y-auto p-5 space-y-1.5" style="height: calc(100vh - 57px);"></div>
+<div id="results" class="w-1/2 overflow-y-auto px-6 py-5 space-y-2" style="height: calc(100vh - 65px);"></div>
 
 <script>
   const INITIAL_MODE = "{{ initial_mode }}";
@@ -108,19 +88,83 @@
   let pageLoading = false;
   let searchTimer = null;
 
+  // ── Taiwan SVG Map ──────────────────────────────────────────────────────
+  const COUNTY_NORMALIZE = {
+    "臺北市":"台北","新北市":"新北","基隆市":"基隆","宜蘭縣":"宜蘭",
+    "桃園市":"桃園","新竹市":"新竹","新竹縣":"新竹","苗栗縣":"苗栗",
+    "臺中市":"台中","花蓮縣":"花蓮","彰化縣":"彰化","南投縣":"南投",
+    "雲林縣":"雲林","嘉義市":"嘉義","嘉義縣":"嘉義","臺南市":"台南",
+    "高雄市":"高雄","屏東縣":"屏東","臺東縣":"台東",
+  };
+  const ISLANDS = new Set(["澎湖縣","金門縣","連江縣"]);
+  let selectedCounty = null;
+
+  function initMap() {
+    const svgEl = document.getElementById("taiwan-map");
+    const w = svgEl.clientWidth || 300;
+    const h = svgEl.clientHeight || 500;
+    const svg = d3.select(svgEl);
+
+    fetch("https://cdn.jsdelivr.net/npm/taiwan-atlas/counties-10t.json")
+      .then(r => r.json())
+      .then(tw => {
+        const counties = topojson.feature(tw, tw.objects.counties);
+        const mainFeatures = counties.features.filter(f => !ISLANDS.has(f.properties.COUNTYNAME));
+        const mainGeoJSON  = { type: "FeatureCollection", features: mainFeatures };
+        const padding = 24;
+        const proj = d3.geoMercator().fitExtent([[padding, padding], [w - padding, h - padding]], mainGeoJSON);
+        const path = d3.geoPath().projection(proj);
+
+        svg.selectAll("path")
+          .data(counties.features)
+          .join("path")
+          .attr("d", path)
+          .attr("fill", d => ISLANDS.has(d.properties.COUNTYNAME) ? "#f3f4f6" : "#eef3eb")
+          .attr("stroke", d => ISLANDS.has(d.properties.COUNTYNAME) ? "#e5e7eb" : "#d1d5db")
+          .attr("stroke-width", 0.5)
+          .style("cursor", d => ISLANDS.has(d.properties.COUNTYNAME) ? "default" : "pointer")
+          .on("mouseenter", function(_, d) {
+            if (ISLANDS.has(d.properties.COUNTYNAME)) return;
+            d3.select(this).raise();
+            const display = COUNTY_NORMALIZE[d.properties.COUNTYNAME];
+            if (display !== selectedCounty)
+              d3.select(this).attr("fill", "#9ab88a");
+          })
+          .on("mouseleave", function(_, d) {
+            if (ISLANDS.has(d.properties.COUNTYNAME)) return;
+            const display = COUNTY_NORMALIZE[d.properties.COUNTYNAME];
+            if (display !== selectedCounty)
+              d3.select(this).attr("fill", "#eef3eb");
+          })
+          .on("click", function(_, d) {
+            if (ISLANDS.has(d.properties.COUNTYNAME)) return;
+            const display = COUNTY_NORMALIZE[d.properties.COUNTYNAME];
+            if (!display) return;
+            svg.selectAll("path")
+              .attr("fill", p => ISLANDS.has(p.properties.COUNTYNAME) ? "#f3f4f6" : "#eef3eb");
+            d3.select(this).attr("fill", "#5a7c50");
+            selectedCounty = display;
+            loadCounty(display);
+          });
+      });
+  }
+
   function setMode(mode) {
     ['map','date','search'].forEach(m => {
       document.getElementById('mode-' + m).classList.add('hidden');
       const tab = document.getElementById('tab-' + m);
-      tab.classList.remove('text-green-800');
-      tab.classList.add('text-gray-500');
+      tab.classList.remove('text-[#5a7c50]', 'border-b-[#5a7c50]');
+      tab.classList.add('text-gray-500', 'border-transparent');
     });
     document.getElementById('mode-' + mode).classList.remove('hidden');
     const activeTab = document.getElementById('tab-' + mode);
-    activeTab.classList.remove('text-gray-500');
-    activeTab.classList.add('text-green-800');
+    activeTab.classList.remove('text-gray-500', 'border-transparent');
+    activeTab.classList.add('text-[#5a7c50]', 'border-b-[#5a7c50]');
     if (mode !== 'map') {
-      document.querySelectorAll('.county-btn').forEach(b => b.classList.remove('bg-green-100','border-green-600','text-green-800'));
+      selectedCounty = null;
+      d3.select("#taiwan-map").selectAll("path")
+        .filter(d => !ISLANDS.has(d.properties.COUNTYNAME))
+        .attr("fill", "#eef3eb");
     }
   }
 
@@ -157,12 +201,11 @@
       const r = document.getElementById('results');
       if (r.scrollTop + r.clientHeight >= r.scrollHeight - 200) loadMore();
     });
+
+    initMap();
   });
 
-  function loadCounty(name, btn) {
-    document.querySelectorAll('.county-btn').forEach(b =>
-      b.classList.remove('bg-green-100','border-green-600','text-green-800'));
-    btn.classList.add('bg-green-100','border-green-600','text-green-800');
+  function loadCounty(name) {
     updateResults('/fragment/county/' + encodeURIComponent(name));
   }
 

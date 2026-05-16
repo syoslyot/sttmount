@@ -39,7 +39,7 @@
 {% block content %}
 
 {# ── 左半：地圖 ── #}
-<div class="w-1/2 shrink-0 flex flex-col" style="height: calc(100vh - 57px);">
+<div class="w-1/2 shrink-0 flex flex-col" style="height: calc(100vh - 65px);">
   <div id="map" class="flex-1 min-h-0"></div>
   {% if gpx_files %}
   <div id="elevation-div" class="shrink-0 bg-white border-t border-gray-200" style="height: 140px;"></div>
@@ -47,7 +47,7 @@
 </div>
 
 {# ── 右半：出隊資訊（獨立捲動）── #}
-<div class="w-1/2 overflow-y-auto px-8 py-8 space-y-6" style="height: calc(100vh - 57px)">
+<div class="w-1/2 overflow-y-auto px-10 py-8 space-y-7" style="height: calc(100vh - 65px)">
 
   {# 直企截圖（P1+P2 合併）#}
   {% if exp.preview_image %}
@@ -57,8 +57,8 @@
 
   {# 人員名單 #}
   {% if members %}
-  <details class="bg-white border border-gray-200 rounded-xl overflow-hidden group">
-    <summary class="flex items-center justify-between px-4 py-3 cursor-pointer select-none text-sm text-gray-700 hover:bg-gray-50">
+  <details class="bg-white border border-gray-100 rounded-xl overflow-hidden shadow-sm group">
+    <summary class="flex items-center justify-between px-4 py-3 cursor-pointer select-none text-[15px] text-gray-700 hover:bg-gray-50">
       <span class="font-medium">人員名單</span>
       <svg class="w-4 h-4 text-gray-400 transition-transform group-open:rotate-180" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" d="m19 9-7 7-7-7"/>
@@ -77,10 +77,10 @@
         <tbody>
           {% for m in members %}
           <tr class="border-b border-gray-100 last:border-0">
-            <td class="px-4 py-2 text-gray-800">{{ m.name }}</td>
-            <td class="px-4 py-2 text-gray-500">{{ m.role or '—' }}</td>
-            <td class="px-4 py-2 text-gray-500">{{ m.department or '—' }}</td>
-            <td class="px-4 py-2 text-gray-500">{{ m.experience or '—' }}</td>
+            <td class="px-4 py-2 text-[15px] text-gray-800">{{ m.name }}</td>
+            <td class="px-4 py-2 text-[15px] text-gray-600">{{ m.role or '—' }}</td>
+            <td class="px-4 py-2 text-[15px] text-gray-600">{{ m.department or '—' }}</td>
+            <td class="px-4 py-2 text-[15px] text-gray-600">{{ m.experience or '—' }}</td>
           </tr>
           {% endfor %}
         </tbody>
@@ -93,15 +93,15 @@
   {% if records %}
   <div class="space-y-2">
     {% for r in records %}
-    <details class="bg-white border border-gray-200 rounded-xl overflow-hidden group" open>
-      <summary class="flex items-center justify-between px-4 py-3 cursor-pointer select-none text-sm text-gray-700 hover:bg-gray-50">
+    <details class="bg-white border border-gray-100 rounded-xl overflow-hidden shadow-sm group" open>
+      <summary class="flex items-center justify-between px-4 py-3 cursor-pointer select-none text-[15px] text-gray-700 hover:bg-gray-50">
         <span class="font-medium">{{ r.filename }}</span>
         <svg class="w-4 h-4 text-gray-400 transition-transform group-open:rotate-180" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" d="m19 9-7 7-7-7"/>
         </svg>
       </summary>
       <div class="border-t border-gray-100 px-4 py-3">
-        <pre class="whitespace-pre-wrap text-sm text-gray-700 font-mono leading-relaxed">{{ r.content }}</pre>
+        <pre class="whitespace-pre-wrap text-[15px] text-gray-700 font-mono leading-relaxed">{{ r.content }}</pre>
       </div>
     </details>
     {% endfor %}

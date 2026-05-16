@@ -4,15 +4,21 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{% block title %}成大山協{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400&family=Noto+Sans+TC:wght@300;400;500&display=swap" rel="stylesheet">
   <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: 'Noto Serif TC', serif; }
+  </style>
   {% block head %}{% endblock %}
 </head>
-<body class="bg-gray-50 text-gray-800 min-h-screen flex flex-col">
+<body class="bg-[#f7f6f3] text-gray-700 min-h-screen flex flex-col">
 
   {# ── Navbar ── #}
   {% set path = request.url.path %}
-  <nav class="bg-green-800 text-white px-6 py-3 flex items-center justify-between shadow shrink-0">
-    <a href="/" class="font-bold text-lg tracking-wide">成大山協</a>
+  <nav class="bg-[#6b8a5e] text-white py-4 flex items-center justify-between shadow-sm shrink-0"
+       style="padding-left: calc(50vw/6 - 0.5rem); padding-right: 2rem;">
+    <a href="/" class="text-[17px] tracking-[0.2em] font-light opacity-95" style="font-family:'Noto Serif TC',serif;">成大山協</a>
     {% block navbar_extra %}{% endblock %}
   </nav>
 
