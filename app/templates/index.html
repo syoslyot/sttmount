@@ -151,6 +151,10 @@
   }
 
   document.addEventListener('DOMContentLoaded', () => {
+    const today = new Date().toISOString().slice(0, 10);
+    document.getElementById('date-from').value = today;
+    document.getElementById('date-to').value   = today;
+
     document.getElementById('results').addEventListener('scroll', () => {
       const r = document.getElementById('results');
       if (r.scrollTop + r.clientHeight >= r.scrollHeight - 200) loadMore();
