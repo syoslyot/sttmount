@@ -2,6 +2,31 @@
 {% block title %}{{ exp.name }} — 成大山協{% endblock %}
 {% block main_class %}flex overflow-hidden h-[calc(100vh-57px)]{% endblock %}
 
+{% block navbar_extra %}
+{% if gpx_files or map_files %}
+<div class="flex items-center gap-2">
+  {% for f in gpx_files %}
+  <a href="/static/gpx/{{ f.file_path }}" download
+     class="inline-flex items-center gap-1.5 text-white/80 hover:text-white hover:bg-white/10 rounded px-3 py-1.5 text-sm transition-colors">
+    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3"/>
+    </svg>
+    {{ exp.name }}.gpx
+  </a>
+  {% endfor %}
+  {% for f in map_files %}
+  <a href="/static/maps/{{ f.file_path }}" download
+     class="inline-flex items-center gap-1.5 text-white/80 hover:text-white hover:bg-white/10 rounded px-3 py-1.5 text-sm transition-colors">
+    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3"/>
+    </svg>
+    {{ exp.name }}.pdf
+  </a>
+  {% endfor %}
+</div>
+{% endif %}
+{% endblock %}
+
 {% block head %}
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
   <link rel="stylesheet" href="https://unpkg.com/@raruto/leaflet-elevation/dist/leaflet-elevation.min.css">
@@ -14,15 +39,15 @@
 {% block content %}
 
 {# ── 左半：地圖 ── #}
-<div class="w-1/2 shrink-0 relative" style="height: calc(100vh - 57px);">
-  <div id="map" class="w-full h-full"></div>
+<div class="w-1/2 shrink-0 flex flex-col" style="height: calc(100vh - 57px);">
+  <div id="map" class="flex-1 min-h-0"></div>
+  {% if gpx_files %}
+  <div id="elevation-div" class="shrink-0 bg-white border-t border-gray-200" style="height: 140px;"></div>
+  {% endif %}
 </div>
 
 {# ── 右半：出隊資訊（獨立捲動）── #}
 <div class="w-1/2 overflow-y-auto px-8 py-8 space-y-6" style="height: calc(100vh - 57px)">
-
-  {# 標題 #}
-  <h1 class="text-2xl font-bold text-gray-800">{{ exp.name }}</h1>
 
   {# 直企截圖（P1+P2 合併）#}
   {% if exp.preview_image %}
@@ -32,35 +57,43 @@
 
   {# 人員名單 #}
   {% if members %}
-  <div class="bg-white border border-gray-200 rounded-xl overflow-hidden">
-    <table class="w-full text-sm">
-      <thead class="bg-gray-50 text-gray-400 border-b border-gray-200 text-xs">
-        <tr>
-          <th class="text-left px-4 py-2">姓名</th>
-          <th class="text-left px-4 py-2">角色</th>
-          <th class="text-left px-4 py-2">系級</th>
-          <th class="text-left px-4 py-2">資歷</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for m in members %}
-        <tr class="border-b border-gray-100 last:border-0">
-          <td class="px-4 py-2 text-gray-800">{{ m.name }}</td>
-          <td class="px-4 py-2 text-gray-500">{{ m.role or '—' }}</td>
-          <td class="px-4 py-2 text-gray-500">{{ m.department or '—' }}</td>
-          <td class="px-4 py-2 text-gray-500">{{ m.experience or '—' }}</td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
+  <details class="bg-white border border-gray-200 rounded-xl overflow-hidden group">
+    <summary class="flex items-center justify-between px-4 py-3 cursor-pointer select-none text-sm text-gray-700 hover:bg-gray-50">
+      <span class="font-medium">人員名單</span>
+      <svg class="w-4 h-4 text-gray-400 transition-transform group-open:rotate-180" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" d="m19 9-7 7-7-7"/>
+      </svg>
+    </summary>
+    <div class="border-t border-gray-100">
+      <table class="w-full text-sm">
+        <thead class="bg-gray-50 text-gray-400 border-b border-gray-200 text-xs">
+          <tr>
+            <th class="text-left px-4 py-2">姓名</th>
+            <th class="text-left px-4 py-2">角色</th>
+            <th class="text-left px-4 py-2">系級</th>
+            <th class="text-left px-4 py-2">資歷</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for m in members %}
+          <tr class="border-b border-gray-100 last:border-0">
+            <td class="px-4 py-2 text-gray-800">{{ m.name }}</td>
+            <td class="px-4 py-2 text-gray-500">{{ m.role or '—' }}</td>
+            <td class="px-4 py-2 text-gray-500">{{ m.department or '—' }}</td>
+            <td class="px-4 py-2 text-gray-500">{{ m.experience or '—' }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </details>
   {% endif %}
 
   {# 成員紀錄（txt） #}
   {% if records %}
   <div class="space-y-2">
     {% for r in records %}
-    <details class="bg-white border border-gray-200 rounded-xl overflow-hidden group">
+    <details class="bg-white border border-gray-200 rounded-xl overflow-hidden group" open>
       <summary class="flex items-center justify-between px-4 py-3 cursor-pointer select-none text-sm text-gray-700 hover:bg-gray-50">
         <span class="font-medium">{{ r.filename }}</span>
         <svg class="w-4 h-4 text-gray-400 transition-transform group-open:rotate-180" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -68,42 +101,13 @@
         </svg>
       </summary>
       <div class="border-t border-gray-100 px-4 py-3">
-        <pre class="whitespace-pre-wrap text-sm text-gray-700 font-mono leading-relaxed max-h-80 overflow-y-auto">{{ r.content }}</pre>
+        <pre class="whitespace-pre-wrap text-sm text-gray-700 font-mono leading-relaxed">{{ r.content }}</pre>
       </div>
     </details>
     {% endfor %}
   </div>
   {% endif %}
 
-  {# 航蹟下載 #}
-  {% if gpx_files %}
-  <div class="flex flex-wrap gap-2">
-    {% for f in gpx_files %}
-    <a href="/static/gpx/{{ f.file_path }}" download
-       class="inline-flex items-center gap-2 bg-white border border-gray-200 rounded-lg px-4 py-2.5 text-sm text-gray-700 hover:border-green-400 hover:text-green-700 transition-colors">
-      <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3"/>
-      </svg>
-      {{ f.filename }}
-    </a>
-    {% endfor %}
-  </div>
-  {% endif %}
-
-  {# 地圖下載 #}
-  {% if map_files %}
-  <div class="flex flex-wrap gap-2">
-    {% for f in map_files %}
-    <a href="/static/maps/{{ f.file_path }}" download
-       class="inline-flex items-center gap-2 bg-white border border-gray-200 rounded-lg px-4 py-2.5 text-sm text-gray-700 hover:border-green-400 hover:text-green-700 transition-colors">
-      <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3"/>
-      </svg>
-      {{ f.filename }}
-    </a>
-    {% endfor %}
-  </div>
-  {% endif %}
 
 </div>
 
@@ -124,12 +128,13 @@
     "https://wmts.nlsc.gov.tw/wmts/EMAP/default/GoogleMapsCompatible/{z}/{y}/{x}",
     { attribution: "© 國土測繪中心", maxZoom: 20 }
   );
+  const openTopoMap = L.tileLayer(
+    "https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png",
+    { attribution: "© OpenStreetMap, © OpenTopoMap", maxZoom: 17 }
+  );
   const baseLayers = {
     "NLSC 通用電子地圖": nlscEmap,
-    "OpenTopoMap（等高線）": L.tileLayer(
-      "https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png",
-      { attribution: "© OpenStreetMap, © OpenTopoMap", maxZoom: 17 }
-    ),
+    "OpenTopoMap（等高線）": openTopoMap,
     "OpenStreetMap": L.tileLayer(
       "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
       { attribution: "© OpenStreetMap contributors", maxZoom: 19 }
@@ -145,23 +150,28 @@
       { attribution: "© 國土測繪中心", maxZoom: 20, opacity: 0.7 }
     ),
   };
-  const map = L.map("map", { layers: [nlscEmap] }).setView(center, zoom);
+  const map = L.map("map", { layers: [openTopoMap] }).setView(center, zoom);
   L.control.layers(baseLayers, overlayLayers).addTo(map);
+  L.control.scale({ metric: true, imperial: false }).addTo(map);
 
   {% if gpx_files %}
   const elevation = L.control.elevation({
-    position: "bottomright",
     theme: "steelblue-theme",
-    height: 160,
-    width: 500,
+    detached: true,
+    elevationDiv: "#elevation-div",
+    height: 140,
+    width: 0,
     margins: { top: 10, right: 20, bottom: 30, left: 50 },
     followMarker: true,
-    slope: false,
+    slope: true,
     speed: false,
+    time: true,
+    summary: false,
+    downloadLink: false,
   }).addTo(map);
 
   {% for f in gpx_files %}
-  {% if '.kml' in f.filename %}
+  {% if '.kml' in f.file_path %}
   (function() {
     const layer = omnivore.kml("/static/gpx/{{ f.file_path }}");
     layer.on("ready", function() { map.fitBounds(layer.getBounds()); });

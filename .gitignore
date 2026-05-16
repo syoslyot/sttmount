@@ -8,5 +8,7 @@ app/static/gpx/*
 !app/static/gpx/.gitkeep
 app/static/maps/*
 !app/static/maps/.gitkeep
+app/static/previews/*
+!app/static/previews/.gitkeep
 .claude/
 .playwright-mcp/

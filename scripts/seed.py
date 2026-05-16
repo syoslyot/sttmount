@@ -102,20 +102,18 @@ def seed(append: bool = False):
 
         # gpx_files: 0 or 1
         if random.random() < 0.5:
-            fname = f"{region}_track.gpx"
+            fname = f"{name}.gpx"
             conn.execute(
                 "INSERT OR IGNORE INTO gpx_files(expedition_id, filename, file_path) VALUES (?, ?, ?)",
-                (exp_id, fname, f"{exp_id}/{fname}"),
+                (exp_id, fname, fname),
             )
 
-        # map_files: 0–2
-        for j in range(random.randint(0, 2)):
-            ftype = random.choice(["pdf", "image"])
-            ext = "pdf" if ftype == "pdf" else "jpg"
-            fname = f"{region}_map{j + 1}.{ext}"
+        # map_files: 0 or 1
+        if random.random() < 0.5:
+            fname = f"{name}.pdf"
             conn.execute(
                 "INSERT OR IGNORE INTO map_files(expedition_id, filename, file_path, file_type) VALUES (?, ?, ?, ?)",
-                (exp_id, fname, f"{exp_id}/{fname}", ftype),
+                (exp_id, fname, fname, "pdf"),
             )
 
         # records: 0 or 1
